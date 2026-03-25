@@ -1,0 +1,81 @@
+.checker {
+    width: var(--checker-size);
+    height: var(--checker-size);
+    border-radius: 50%;
+    cursor: pointer;
+    border: none;
+    outline: none;
+    transition: all var(--transition-fast);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: relative;
+}
+
+.checker::before,
+.checker::after {
+    content: '';
+    position: absolute;
+    border-radius: 50%;
+}
+
+.checker::before { width: 70%; height: 70%; }
+.checker::after { width: 35%; height: 35%; }
+
+.checker--light {
+    background-color: var(--color-checker-light);
+    box-shadow: var(--shadow-checker-light);
+}
+
+.checker--light::before {
+    border: 1.5px solid var(--color-checker-light-border);
+    box-shadow: var(--shadow-checker-light-before);
+}
+
+.checker--light::after {
+    background-color: var(--color-checker-light);
+    border: 1px solid var(--color-checker-light-border);
+    box-shadow: var(--shadow-checker-light-after);
+}
+
+.checker--dark {
+    background-color: var(--color-checker-dark);
+    box-shadow: var(--shadow-checker-dark);
+}
+
+.checker--dark::before {
+    border: 1.5px solid var(--color-checker-dark-border);
+    box-shadow: var(--shadow-checker-dark-before);
+}
+
+.checker--dark::after {
+    background-color: var(--color-checker-dark);
+    border: 1px solid var(--color-checker-dark-border);
+    box-shadow: var(--shadow-checker-dark-after);
+}
+
+.checker:hover {
+    transform: translateY(-2px);
+}
+
+.is-selected .checker {
+    transform: translateY(-5px) scale(1.05);
+    box-shadow: var(--shadow-checker-selected);
+    z-index: 10;
+}
+
+.board__cell .checker--king {
+    border: 2px solid var(--color-checker-king-border);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+}
+
+.checker--king::after {
+    content: '';
+    display: block;
+    width: 70%;
+    height: 70%;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23DAA520"><path d="M5 16L3 5l5.5 5L12 4l3.5 6L21 5l-2 11H5zm14 3c0 .6-.4 1-1 1H6c-.6 0-1-.4-1-1v-1h14v1z"/></svg>');
+    background-size: contain;
+    background-position: center;
+    background-repeat: no-repeat;
+}

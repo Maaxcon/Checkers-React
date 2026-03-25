@@ -1,0 +1,9 @@
+.board {
+    display: grid;
+    border: var(--board-border-size) solid var(--color-board-border);
+    border-radius: 4px;
+    box-shadow: var(--shadow-board);
+    background-color: var(--color-board-border);
+    grid-template-columns: repeat(8, var(--square-size));
+    grid-template-rows: repeat(8, var(--square-size));
+}
