@@ -1,4 +1,4 @@
-import { GAME_SETTINGS } from '../constants/constants.ts';
+import { GAME_SETTINGS } from '../constants/index.ts';
 import type { SavedData } from '../types/types.ts';
 
 export class StorageService {

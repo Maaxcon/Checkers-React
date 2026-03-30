@@ -1,4 +1,4 @@
-import { GAME_SETTINGS } from '../constants/constants.ts';
+import { GAME_SETTINGS } from '../constants/index.ts';
 import type { Board } from './Board.ts';
 import type { Piece } from './Piece.ts';
 import type { Move, CaptureMove, MoveAction } from '../types/types.ts';

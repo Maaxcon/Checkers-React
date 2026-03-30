@@ -2,13 +2,14 @@ import { GameState } from './GameState.ts';
 import { MoveValidator } from './MoveValidator.ts';
 import { NotationHelper } from '../utils/NotationHelper.ts'; 
 import { GameTimer } from './GameTimer.ts'; 
-import { GAME_RESULTS } from '../constants/constants.ts';
-import type { Player } from '../constants/constants.ts';
+import { BOARD, GAME_RESULTS } from '../constants/index.ts';
+import type { Player } from '../constants/index.ts';
 import type {
     GameOverReason,
     HistoryEntry,
     Move,
     MoveLogEntry,
+    Position,
     PersistedHistoryEntry,
     PlayerMoveStatus,
     SavedData,
@@ -65,7 +66,7 @@ export class CheckersModel {
             if (savedData.multiJumpPiece) {
                 this.#state.setMultiJumpPiece(savedData.multiJumpPiece.row, savedData.multiJumpPiece.col);
             }
-        } catch (error) {
+        } catch {
             this.resetGame();
         }
     }
@@ -89,6 +90,22 @@ export class CheckersModel {
     get winner() { return this.#state.winner; }
     get moveLog(): MoveLogEntry[] { return this.#moveLog; }
     get timerTimes(): TimerTimes { return this.#timer.currentTimes; }
+
+    getMandatoryPieces(): Position[] {
+        if (this.winner) return [];
+        const status = this.getPlayerMoveStatus();
+        if (!status.hasCaptures) return [];
+        const pieces: Position[] = [];
+        for (let row = 0; row < BOARD.ROWS; row++) {
+            for (let col = 0; col < BOARD.COLS; col++) {
+                const moves = this.getValidMoves(row, col, true);
+                if (moves.some(move => move.type === 'capture')) {
+                    pieces.push({ row, col });
+                }
+            }
+        }
+        return pieces;
+    }
 
     bindTimerTick(callback: (times: TimerTimes) => void): void {
         this.#timer.bindTick(callback);

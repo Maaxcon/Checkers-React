@@ -1,5 +1,5 @@
-import { PLAYERS, DIRECTIONS } from '../constants/constants.ts';
-import type { Player, Direction } from '../constants/constants.ts';
+import { PLAYERS, DIRECTIONS } from '../constants/index.ts';
+import type { Player, Direction } from '../constants/index.ts';
 import type { SerializedPiece } from '../types/types.ts';
 
 export class Piece {

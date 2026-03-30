@@ -1,4 +1,4 @@
-import type { Player, GameResult } from '../constants/constants.ts';
+import type { Player, GameResult } from '../constants/index.ts';
 import type { GameState } from '../models/GameState.ts';
 import type { Piece } from '../models/Piece.ts';
 

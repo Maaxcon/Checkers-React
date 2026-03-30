@@ -1,0 +1,72 @@
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@600;800&display=swap');
+
+:root {
+    --square-size: clamp(30px, calc(min(95vw, 70vh) / 8), 90px);
+    --checker-size: calc(var(--square-size) * 0.75);
+    --board-border-size: clamp(4px, 1.5vmin, 12px);
+
+    --font-main: 'Montserrat', sans-serif;
+    --fs-btn: clamp(0.9rem, 2vw, 1.1rem);
+    --fs-win-title: clamp(1.5rem, 3vw, 2rem);
+    --fs-win-btn: 1.2rem;
+
+    --pad-btn-x: clamp(1.5rem, 4vw, 3.5rem);
+    --pad-win-btn: 10px 25px;
+
+    --color-bg-game-overlay: rgba(0, 0, 0, 0.65);
+    --color-bg-win-message: rgba(255, 255, 255, 0.95);
+    --color-btn-restart: #4CAF50;
+    --color-btn-restart-hover: #45a049;
+    --color-keyboard: rgba(240, 217, 160, 0.6);
+
+    --color-panel-bg: rgba(44, 30, 22, 0.75);
+    --color-panel-border: rgba(240, 217, 160, 0.3);
+    --color-scrollbar-track: rgba(0, 0, 0, 0.2);
+
+    --color-text-main: #ffffff;
+    --color-text-btn: #1a1a1a;
+    --color-accent: #f0d9a0;
+    --color-text-timer-dark: #a0a0a0;
+    --color-history-item-text: #e0e0e0;
+
+    --color-board-border: #2c1e16;
+    --color-white-square: #f0d9b5;
+    --color-black-square: #b58863;
+    --color-highlight-base: rgba(0, 255, 157, 0.6);
+    --color-highlight-hover: rgba(0, 255, 157, 1);
+    --color-history-highlight: rgba(75, 246, 59, 0.2);
+    --color-history-item-bg: rgba(255, 255, 255, 0.05);
+    --color-mandatory-base: #ffb703;
+    --color-mandatory-glow: rgba(255, 183, 3, 0.6);
+
+    --color-checker-light: #f0e2ca;
+    --color-checker-light-border: #dabd98;
+    --color-checker-dark: #2c2c2c;
+    --color-checker-dark-border: #1a1a1a;
+    --color-checker-king-border: gold;
+    --color-checker-selected-ring: #ff4757;
+
+    --shadow-board: 0 25px 50px rgba(0, 0, 0, 0.8), inset 0 0 10px rgba(0,0,0,0.5);
+    --shadow-win-message: 0 4px 15px rgba(0, 0, 0, 0.3);
+    --shadow-panel: 0 4px 10px rgba(0,0,0,0.3);
+
+    --shadow-checker-light: 0 4px 5px rgba(0,0,0,0.3), inset 0 -3px 4px rgba(0,0,0,0.2), inset 0 3px 4px rgba(255,255,255,0.8);
+    --shadow-checker-light-before: inset 0 2px 4px rgba(0,0,0,0.1), 0 2px 2px rgba(255,255,255,0.9);
+    --shadow-checker-light-after: inset 0 2px 2px rgba(255,255,255,0.8), 0 2px 3px rgba(0,0,0,0.1);
+
+    --shadow-checker-dark: 0 4px 5px rgba(0,0,0,0.4), inset 0 -3px 4px rgba(0,0,0,0.6), inset 0 3px 4px rgba(255,255,255,0.2);
+    --shadow-checker-dark-before: inset 0 2px 4px rgba(0,0,0,0.5), 0 1px 1px rgba(255,255,255,0.1);
+    --shadow-checker-dark-after: inset 0 1px 2px rgba(255,255,255,0.1), 0 2px 3px rgba(0,0,0,0.4);
+
+    --shadow-checker-selected: 0 0 0 3px var(--color-checker-selected-ring), 0 12px 20px rgba(0,0,0,0.5), inset 0 -3px 4px rgba(0,0,0,0.3), inset 0 2px 3px rgba(255,255,255,0.7);
+
+    --transition-fast: 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+    --radius-win: 10px;
+    --radius-btn: 5px;
+}
+
+@media (max-width: 700px) {
+    :root {
+        --square-size: clamp(28px, calc(min(88vw, 70vh) / 8), 80px);
+    }
+}

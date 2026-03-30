@@ -10,6 +10,14 @@
 .board__cell--white { background-color: var(--color-white-square); }
 .board__cell--black { background-color: var(--color-black-square); }
 
+.board__cell.is-mandatory {
+    box-shadow: inset 0 0 0 3px var(--color-mandatory-base);
+}
+
+.board__cell.is-mandatory .checker {
+    box-shadow: 0 0 0 3px var(--color-mandatory-base), 0 0 12px var(--color-mandatory-glow);
+}
+
 .is-highlighted {
     position: relative;
     cursor: pointer;

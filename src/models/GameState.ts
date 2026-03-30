@@ -1,6 +1,6 @@
-import { PLAYERS, BOARD } from '../constants/constants.ts';
+import { PLAYERS, BOARD } from '../constants/index.ts';
 import { Board } from './Board.ts';
-import type { Player } from '../constants/constants.ts';
+import type { Player } from '../constants/index.ts';
 import type { BoardGrid, SavedGameState, SavedGrid, Position, Move, MoveResult } from '../types/types.ts';
 
 export class GameState {

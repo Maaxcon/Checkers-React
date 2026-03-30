@@ -1,5 +1,5 @@
-import { PLAYERS, GAME_SETTINGS } from '../constants/constants.ts';
-import type { Player } from '../constants/constants.ts';
+import { PLAYERS, GAME_SETTINGS } from '../constants/index.ts';
+import type { Player } from '../constants/index.ts';
 import type { TimerState, TimerTimes } from '../types/types.ts';
 
 export class GameTimer {

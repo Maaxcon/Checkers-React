@@ -1,4 +1,4 @@
-import { BOARD } from '../constants/constants.ts';
+import { BOARD } from '../constants/index.ts';
 
 export class NotationHelper {
     static toNotation(row: number, col: number): string {

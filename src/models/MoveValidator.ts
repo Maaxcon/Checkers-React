@@ -1,5 +1,5 @@
-import { PLAYERS, BOARD } from '../constants/constants.ts';
-import type { Player } from '../constants/constants.ts';
+import { PLAYERS, BOARD } from '../constants/index.ts';
+import type { Player } from '../constants/index.ts';
 import { MoveEngine } from './MoveEngine.ts';
 import type { GameState } from './GameState.ts';
 import type { Piece } from './Piece.ts';

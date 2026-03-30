@@ -1,4 +1,4 @@
-import { BOARD, PLAYERS } from '../constants/constants.ts';
+import { BOARD, PLAYERS } from '../constants/index.ts';
 import { Piece } from './Piece.ts';
 import type { BoardGrid, SavedGrid, SerializedPiece } from '../types/types.ts';
 
