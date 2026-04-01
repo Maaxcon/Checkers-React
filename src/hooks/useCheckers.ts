@@ -64,7 +64,7 @@ export const useCheckers = () => {
 
     useEffect(() => {
         saveGame(buildSavedData(game, timerState));
-    }, [game, timerState, saveGame]);
+    }, [game, timerState]);
 
     useEffect(() => {
         switchPlayer(game.turn);
