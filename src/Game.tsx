@@ -3,13 +3,23 @@ import Board from './components/Board/Board.tsx';
 import GameInfo from './components/GameInfo/GameInfo.tsx';
 import MoveHistory from './components/MoveHistory/MoveHistory.tsx';
 import ActionButton from './components/ActionButton/ActionButton.tsx';
-import TurnTimer from './components/TurnTimer/TurnTimer.tsx';
+import TimerPanel, { type TimerPanelHandle } from './components/TurnTimer/TimerPanel.tsx';
 import WinMessage from './components/WinMessage/WinMessage.tsx';
 import { useCheckers } from './hooks/useCheckers.ts';
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
+import { createInitialTimerState } from './logic/timer.ts';
+import { sanitizeSavedData } from './logic/storage.ts';
+import { loadGame } from './services/StorageService.ts';
 
 function Game() {
     const [confirmReset, setConfirmReset] = useState(false);
+    const [saved] = useState(() => sanitizeSavedData(loadGame()));
+    const [initialTimer] = useState(() => saved?.timer ?? createInitialTimerState());
+    const timerRef = useRef<TimerPanelHandle | null>(null);
+    const getTimerSnapshot = useCallback(
+        () => timerRef.current?.getSnapshot() ?? initialTimer,
+        [initialTimer]
+    );
     const {
         board,
         selected,
@@ -21,26 +31,36 @@ function Game() {
         currentPlayer,
         winner,
         captured,
-        timerTimes,
         lastMove,
         onCellClick,
         onReset,
         onUndo,
+        onTimeout,
         onSelectHistory
-    } = useCheckers();
+    } = useCheckers({ saved, getTimerSnapshot });
 
-    const handleConfirmReset = () => {
+    const handleResetGame = () => {
         onReset();
+        timerRef.current?.reset();
         setConfirmReset(false);
+    };
+
+    const handleUndo = () => {
+        const lastTimer = onUndo();
+        if (lastTimer) {
+            timerRef.current?.restore(lastTimer);
+        }
     };
 
     return (
         <div className="game-container">
             <div className="game-section">
-                <TurnTimer
-                    times={timerTimes}
-                    activePlayer={winner ? null : currentPlayer}
+                <TimerPanel
+                    ref={timerRef}
+                    initialTimer={initialTimer}
+                    turn={currentPlayer}
                     winner={winner}
+                    onTimeout={onTimeout}
                 />
                 <Board
                     grid={board}
@@ -51,7 +71,7 @@ function Game() {
                     onCellClick={onCellClick}
                     lastMove={lastMove}
                 />
-                <WinMessage winner={winner} onRestart={onReset} />
+                <WinMessage winner={winner} onRestart={handleResetGame} />
             </div>
             <aside className="game-sidebar">
                 <GameInfo
@@ -64,7 +84,7 @@ function Game() {
                         <div className="confirm-reset">
                             <span className="confirm-reset__text">Restart the game?</span>
                             <div className="confirm-reset__actions">
-                                <ActionButton text="Yes" onClick={handleConfirmReset} />
+                                <ActionButton text="Yes" onClick={handleResetGame} />
                                 <ActionButton
                                     text="Cancel"
                                     onClick={() => setConfirmReset(false)}
@@ -79,7 +99,7 @@ function Game() {
                     )}
                     <ActionButton
                         text="Undo"
-                        onClick={onUndo}
+                        onClick={handleUndo}
                         disabled={moveLog.length === 0}
                     />
                 </div>

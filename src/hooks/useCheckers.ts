@@ -1,32 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { GAME_SETTINGS, PLAYERS } from '../constants/index.ts';
-import type { Position } from '../types/game.ts';
+import { GAME_SETTINGS } from '../constants/index.ts';
+import type { Player } from '../constants/index.ts';
+import type { Position, SavedData, TimerState } from '../types/game.ts';
 import { getCapturedCounts } from '../logic/selectors.ts';
-import { buildSavedData, sanitizeSavedData } from '../logic/storage.ts';
+import { buildSavedData } from '../logic/storage.ts';
+import { saveGame } from '../services/StorageService.ts';
 import { getMandatoryPieces, getValidMoves } from '../logic/rules.ts';
 import { useGameReducer } from './useGameReducer.ts';
 import { useHighlights } from './useHighlights.ts';
-import { useTimer } from './useTimer.ts';
-import { loadGame, saveGame } from '../services/StorageService.ts';
 
-export const useCheckers = () => {
-    const [saved] = useState(() => sanitizeSavedData(loadGame()));
+type UseCheckersOptions = {
+    saved: SavedData | null;
+    getTimerSnapshot: () => TimerState;
+};
 
+export const useCheckers = ({ saved, getTimerSnapshot }: UseCheckersOptions) => {
     const { game, dispatch } = useGameReducer(saved);
-
-    const {
-        state: timerState,
-        times: timerTimes,
-        switchPlayer,
-        setActivePlayer,
-        reset: resetTimer,
-        restore: restoreTimer,
-        getSnapshot: getTimerSnapshot
-    } = useTimer({
-        initial: saved?.timer,
-        isRunning: game.winner === null,
-        onTimeout: (winner) => dispatch({ type: 'SET_WINNER', winner })
-    });
 
     const {
         historyHighlight,
@@ -61,20 +50,6 @@ export const useCheckers = () => {
         () => getCapturedCounts(game.board),
         [game.board]
     );
-
-    useEffect(() => {
-        saveGame(buildSavedData(game, timerState));
-    }, [game, timerState]);
-
-    useEffect(() => {
-        switchPlayer(game.turn);
-    }, [game.turn, switchPlayer]);
-
-    useEffect(() => {
-        if (game.winner && timerState.activePlayer !== null) {
-            setActivePlayer(null);
-        }
-    }, [game.winner, setActivePlayer, timerState.activePlayer]);
 
     useEffect(() => {
         if (!lastMove) return;
@@ -127,26 +102,31 @@ export const useCheckers = () => {
         }
     }, [clearHighlights, coreState, dispatch, game.board, game.multiJump, game.selected, game.turn, game.winner, getTimerSnapshot, validMoves]);
 
+    useEffect(() => {
+        saveGame(buildSavedData(game, getTimerSnapshot()));
+    }, [game, getTimerSnapshot]);
+
     const handleReset = useCallback(() => {
         dispatch({ type: 'RESET' });
         clearHighlights();
-        resetTimer();
-        setActivePlayer(PLAYERS.LIGHT);
         setLastMove(null);
-    }, [clearHighlights, dispatch, resetTimer, setActivePlayer]);
+    }, [clearHighlights, dispatch]);
 
-    const handleUndo = useCallback(() => {
-        if (game.history.length === 0) return;
+    const handleUndo = useCallback((): TimerState | null => {
+        if (game.history.length === 0) return null;
         const lastTimer = game.history[game.history.length - 1]?.timer;
         dispatch({ type: 'UNDO' });
-        if (lastTimer) {
-            restoreTimer(lastTimer);
-        }
         clearHighlights();
         setLastMove(null);
-    }, [clearHighlights, dispatch, game.history, restoreTimer]);
+        return lastTimer ?? null;
+    }, [clearHighlights, dispatch, game.history]);
+
+    const handleTimeout = useCallback((winner: Player) => {
+        dispatch({ type: 'SET_WINNER', winner });
+    }, [dispatch]);
 
     return {
+        gameState: game,
         board: game.board,
         selected: game.selected,
         validMoves,
@@ -157,10 +137,10 @@ export const useCheckers = () => {
         currentPlayer: game.turn,
         winner: game.winner,
         captured,
-        timerTimes,
         onCellClick: handleCellClick,
         onReset: handleReset,
         onUndo: handleUndo,
+        onTimeout: handleTimeout,
         onSelectHistory: selectHistory,
         lastMove
     };
