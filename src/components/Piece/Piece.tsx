@@ -1,20 +1,23 @@
-import { CSS } from '../../constants/index.ts';
-import type { Piece as PieceModel } from '../../models/Piece.ts';
+import { CSS, PLAYERS } from '../../constants/index.ts';
+import React from 'react';
+import type { Piece as PieceModel } from '../../types/game.ts';
 import './Piece.css';
 
 type PieceProps = {
     piece: PieceModel;
-    elementRef?: (el: HTMLDivElement | null) => void;
+    moveStyle?: React.CSSProperties;
+    isMoving?: boolean;
 };
 
-function Piece({ piece, elementRef }: PieceProps) {
+function Piece({ piece, moveStyle, isMoving = false }: PieceProps) {
     const className = [
         CSS.CHECKER,
-        piece.isLight ? CSS.CHECKER_LIGHT : CSS.CHECKER_DARK,
-        piece.isKing ? CSS.CHECKER_KING : ''
+        piece.player === PLAYERS.LIGHT ? CSS.CHECKER_LIGHT : CSS.CHECKER_DARK,
+        piece.isKing ? CSS.CHECKER_KING : '',
+        isMoving ? 'checker--move' : ''
     ].filter(Boolean).join(' ');
     
-    return <div className={className} ref={elementRef} />;
+    return <div className={className} style={moveStyle} />;
 }
 
-export default Piece;
+export default React.memo(Piece);

@@ -1,3 +1,4 @@
+import React from 'react';
 import { PLAYERS } from '../../constants/index.ts';
 import type { Player } from '../../constants/index.ts';
 import ActionButton from '../ActionButton/ActionButton.tsx';
@@ -23,4 +24,4 @@ function WinMessage({ winner, onRestart }: WinMessageProps) {
     );
 }
 
-export default WinMessage;
+export default React.memo(WinMessage);

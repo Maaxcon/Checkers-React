@@ -1,6 +1,7 @@
+import React from 'react';
 import { PLAYERS } from '../../constants/index.ts';
 import type { Player } from '../../constants/index.ts';
-import type { CapturedCounts } from '../../hooks/useGame.ts';
+import type { CapturedCounts } from '../../types/game.ts';
 import './GameInfo.css';
 
 type GameInfoProps = {
@@ -39,4 +40,4 @@ function GameInfo({ currentTurn, winner, captured }: GameInfoProps) {
     );
 }
 
-export default GameInfo;
+export default React.memo(GameInfo);

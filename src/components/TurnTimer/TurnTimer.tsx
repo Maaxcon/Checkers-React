@@ -1,15 +1,15 @@
 import { PLAYERS } from '../../constants/index.ts';
 import type { Player } from '../../constants/index.ts';
-import type { TimerTimes } from '../../types/types.ts';
+import type { TimerTimes } from '../../types/game.ts';
 import './TurnTimer.css';
 
 type TurnTimerProps = {
     times: TimerTimes;
-    activePlayer: Player;
+    activePlayer: Player | null;
     winner: Player | null;
 };
 
-const isActive = (winner: Player | null, activePlayer: Player, player: Player) =>
+const isActive = (winner: Player | null, activePlayer: Player | null, player: Player) =>
     !winner && activePlayer === player;
 
 function TurnTimer({ times, activePlayer, winner }: TurnTimerProps) {

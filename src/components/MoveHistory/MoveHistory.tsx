@@ -1,4 +1,5 @@
-import type { MoveLogEntry } from '../../types/types.ts';
+import React from 'react';
+import type { MoveLogEntry } from '../../types/game.ts';
 import './MoveHistory.css';
 
 type MoveHistoryProps = {
@@ -35,4 +36,4 @@ function MoveHistory({ moveLog, activeIndex, onSelect }: MoveHistoryProps) {
     );
 }
 
-export default MoveHistory;
+export default React.memo(MoveHistory);

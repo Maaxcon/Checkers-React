@@ -43,6 +43,30 @@ body {
     gap: 10px;
 }
 
+.confirm-reset {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+    border: 1px solid var(--color-panel-border);
+    border-radius: var(--radius-btn);
+    background: var(--color-panel-bg);
+}
+
+.confirm-reset__text {
+    font-weight: 600;
+}
+
+.confirm-reset__actions {
+    display: flex;
+    gap: 10px;
+}
+
+.confirm-reset__actions .btn-undo {
+    margin-bottom: 0;
+    width: auto;
+}
+
 .game-controls .btn-undo {
     margin-bottom: 0;
     width: 100%;

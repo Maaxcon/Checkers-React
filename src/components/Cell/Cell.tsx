@@ -1,6 +1,8 @@
 import { CSS } from '../../constants/index.ts';
-import { useCallback } from 'react';
-import type { Piece as PieceModel } from '../../models/Piece.ts';
+import React, { useCallback } from 'react';
+import { GAME_SETTINGS } from '../../constants/index.ts';
+import type { Position } from '../../types/game.ts';
+import type { Piece as PieceModel } from '../../types/game.ts';
 import Piece from '../Piece/Piece.tsx';
 import './Cell.css';
 
@@ -13,9 +15,8 @@ type CellProps = {
     isHighlighted: boolean;
     isHistoryHighlight: boolean;
     isMandatory: boolean;
-    onClick: () => void;
-    onCellRef: (row: number, col: number, el: HTMLDivElement | null) => void;
-    onPieceRef: (row: number, col: number, el: HTMLDivElement | null) => void;
+    onCellClick: (row: number, col: number) => void;
+    moveFrom: Position | null;
 };
 
 function Cell({
@@ -27,9 +28,8 @@ function Cell({
     isHighlighted,
     isHistoryHighlight,
     isMandatory,
-    onClick,
-    onCellRef,
-    onPieceRef
+    onCellClick,
+    moveFrom
 }: CellProps) {
     const className = [
         CSS.CELL,
@@ -40,24 +40,27 @@ function Cell({
         isMandatory ? 'is-mandatory' : ''
     ].filter(Boolean).join(' ');
 
-    const setCellRef = useCallback((el: HTMLDivElement | null) => {
-        onCellRef(row, col, el);
-    }, [col, onCellRef, row]);
+    const handleClick = useCallback(() => {
+        onCellClick(row, col);
+    }, [col, onCellClick, row]);
 
-    const setPieceRef = useCallback((el: HTMLDivElement | null) => {
-        onPieceRef(row, col, el);
-    }, [col, onPieceRef, row]);
+    const moveStyle = moveFrom
+        ? ({
+            '--move-x': `calc(var(--square-size) * ${moveFrom.col - col})`,
+            '--move-y': `calc(var(--square-size) * ${moveFrom.row - row})`,
+            '--move-duration': `${GAME_SETTINGS.ANIMATION_DURATION_MS}ms`
+        } as React.CSSProperties)
+        : undefined;
 
     return (
         <div
             className={className}
             role="gridcell"
-            onClick={onClick}
-            ref={setCellRef}
+            onClick={handleClick}
         >
-            {piece ? <Piece piece={piece} elementRef={setPieceRef} /> : null}
+            {piece ? <Piece piece={piece} moveStyle={moveStyle} isMoving={Boolean(moveFrom)} /> : null}
         </div>
     );
 }
 
-export default Cell;
+export default React.memo(Cell);

@@ -1,5 +1,5 @@
 import { useCallback, useState } from 'react';
-import type { HistoryHighlight, MoveLogEntry } from '../types/types.ts';
+import type { HistoryHighlight, MoveLogEntry } from '../types/game.ts';
 
 const getHistoryHighlight = (moveLog: MoveLogEntry[], index: number | null): HistoryHighlight | null => {
     if (index === null) return null;

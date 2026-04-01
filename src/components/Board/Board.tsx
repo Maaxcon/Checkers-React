@@ -1,17 +1,17 @@
-import type { BoardGrid, HistoryHighlight, Move, Position } from '../../types/types.ts';
+import React from 'react';
+import type { Board, HistoryHighlight, Move, Position } from '../../types/game.ts';
 import { CSS } from '../../constants/index.ts';
 import Cell from '../Cell/Cell.tsx';
 import './Board.css';
 
 type BoardProps = {
-    grid: BoardGrid;
+    grid: Board;
     selected: Position | null;
     validMoves: Move[];
     historyHighlight: HistoryHighlight | null;
     mandatoryPieces: Position[];
     onCellClick: (row: number, col: number) => void;
-    onCellRef: (row: number, col: number, el: HTMLDivElement | null) => void;
-    onPieceRef: (row: number, col: number, el: HTMLDivElement | null) => void;
+    lastMove: { from: Position; to: Position } | null;
 };
 
 function Board({
@@ -21,8 +21,7 @@ function Board({
     historyHighlight,
     mandatoryPieces,
     onCellClick,
-    onCellRef,
-    onPieceRef
+    lastMove
 }: BoardProps) {
     const validMoveKeys = new Set(validMoves.map(move => `${move.row}-${move.col}`));
     const historyKeys = new Set(
@@ -32,28 +31,35 @@ function Board({
     );
     const mandatoryKeys = new Set(mandatoryPieces.map(piece => `${piece.row}-${piece.col}`));
 
+    const animatedFrom = lastMove?.from ?? null;
+    const animatedTo = lastMove?.to ?? null;
+
     return (
         <div className={CSS.BOARD} role="grid" aria-label="Checkers board">
             {grid.map((row, rowIndex) =>
-                row.map((piece, colIndex) => (
-                    <Cell
-                        key={`${rowIndex}-${colIndex}`}
-                        row={rowIndex}
-                        col={colIndex}
-                        isBlack={(rowIndex + colIndex) % 2 !== 0}
-                        piece={piece}
-                        isSelected={selected?.row === rowIndex && selected?.col === colIndex}
-                        isHighlighted={validMoveKeys.has(`${rowIndex}-${colIndex}`)}
-                        isHistoryHighlight={historyKeys.has(`${rowIndex}-${colIndex}`)}
-                        isMandatory={mandatoryKeys.has(`${rowIndex}-${colIndex}`)}
-                        onClick={() => onCellClick(rowIndex, colIndex)}
-                        onCellRef={onCellRef}
-                        onPieceRef={onPieceRef}
-                    />
-                ))
+                row.map((piece, colIndex) => {
+                    const isAnimatedCell =
+                        animatedTo?.row === rowIndex && animatedTo?.col === colIndex;
+
+                    return (
+                        <Cell
+                            key={`${rowIndex}-${colIndex}`}
+                            row={rowIndex}
+                            col={colIndex}
+                            isBlack={(rowIndex + colIndex) % 2 !== 0}
+                            piece={piece}
+                            isSelected={selected?.row === rowIndex && selected?.col === colIndex}
+                            isHighlighted={validMoveKeys.has(`${rowIndex}-${colIndex}`)}
+                            isHistoryHighlight={historyKeys.has(`${rowIndex}-${colIndex}`)}
+                            isMandatory={mandatoryKeys.has(`${rowIndex}-${colIndex}`)}
+                            onCellClick={onCellClick}
+                            moveFrom={isAnimatedCell ? animatedFrom : null}
+                        />
+                    );
+                })
             )}
         </div>
     );
 }
 
-export default Board;
+export default React.memo(Board);

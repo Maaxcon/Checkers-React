@@ -12,6 +12,16 @@
     position: relative;
 }
 
+.checker--move {
+    animation-name: checker-move;
+    animation-duration: var(--move-duration, 400ms);
+    animation-timing-function: ease-in-out;
+    animation-fill-mode: both;
+    will-change: transform;
+    pointer-events: none;
+    z-index: 12;
+}
+
 .checker::before,
 .checker::after {
     content: '';
@@ -78,4 +88,13 @@
     background-size: contain;
     background-position: center;
     background-repeat: no-repeat;
+}
+
+@keyframes checker-move {
+    from {
+        transform: translate(var(--move-x, 0px), var(--move-y, 0px));
+    }
+    to {
+        transform: translate(0px, 0px);
+    }
 }

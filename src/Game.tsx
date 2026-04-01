@@ -5,97 +5,88 @@ import MoveHistory from './components/MoveHistory/MoveHistory.tsx';
 import ActionButton from './components/ActionButton/ActionButton.tsx';
 import TurnTimer from './components/TurnTimer/TurnTimer.tsx';
 import WinMessage from './components/WinMessage/WinMessage.tsx';
-import { useAnimation } from './hooks/useAnimation.ts';
-import { useGame } from './hooks/useGame.ts';
-import { useHighlights } from './hooks/useHighlights.ts';
-import { useHistory } from './hooks/useHistory.ts';
-import { useInteraction } from './hooks/useInteraction.ts';
-import { useTimer } from './hooks/useTimer.ts';
+import { useCheckers } from './hooks/useCheckers.ts';
+import { useState } from 'react';
 
 function Game() {
-    const game = useGame();
-    useTimer({ modelRef: game.modelRef, onTick: game.setTimerTimes, onPersist: game.persist });
+    const [confirmReset, setConfirmReset] = useState(false);
+    const {
+        board,
+        selected,
+        validMoves,
+        historyHighlight,
+        historyIndex,
+        mandatoryPieces,
+        moveLog,
+        currentPlayer,
+        winner,
+        captured,
+        timerTimes,
+        lastMove,
+        onCellClick,
+        onReset,
+        onUndo,
+        onSelectHistory
+    } = useCheckers();
 
-    const highlights = useHighlights(game.snapshot.moveLog);
-    const animation = useAnimation();
-    const history = useHistory({
-        modelRef: game.modelRef,
-        persist: game.persist,
-        syncFromModel: game.syncFromModel
-    });
-    const interaction = useInteraction({
-        modelRef: game.modelRef,
-        snapshot: game.snapshot,
-        persist: game.persist,
-        syncFromModel: game.syncFromModel,
-        clearHighlights: highlights.clearHighlights,
-        animation: {
-            isAnimatingRef: animation.isAnimatingRef,
-            animateMove: animation.animateMove
-        }
-    });
-
-    const handleReset = () => {
-        const current = game.modelRef.current;
-        current.resetGame();
-        current.startGame();
-        game.persist();
-        game.syncFromModel();
-        interaction.clearSelection();
-        highlights.clearHighlights();
-    };
-
-    const handleUndo = () => {
-        history.undo();
-        interaction.clearSelection();
-        highlights.clearHighlights();
+    const handleConfirmReset = () => {
+        onReset();
+        setConfirmReset(false);
     };
 
     return (
         <div className="game-container">
             <div className="game-section">
                 <TurnTimer
-                    times={game.snapshot.timerTimes}
-                    activePlayer={game.snapshot.currentPlayer}
-                    winner={game.snapshot.winner}
+                    times={timerTimes}
+                    activePlayer={winner ? null : currentPlayer}
+                    winner={winner}
                 />
                 <Board
-                    grid={game.snapshot.boardState}
-                    selected={interaction.selectedPiece}
-                    validMoves={interaction.validMoves}
-                    historyHighlight={highlights.historyHighlight}
-                    mandatoryPieces={game.snapshot.mandatoryPieces}
-                    onCellClick={interaction.handleCellClick}
-                    onCellRef={animation.registerCellRef}
-                    onPieceRef={animation.registerPieceRef}
+                    grid={board}
+                    selected={selected}
+                    validMoves={validMoves}
+                    historyHighlight={historyHighlight}
+                    mandatoryPieces={mandatoryPieces}
+                    onCellClick={onCellClick}
+                    lastMove={lastMove}
                 />
-                <WinMessage winner={game.snapshot.winner} onRestart={handleReset} />
+                <WinMessage winner={winner} onRestart={onReset} />
             </div>
             <aside className="game-sidebar">
                 <GameInfo
-                    currentTurn={game.snapshot.currentPlayer}
-                    winner={game.snapshot.winner}
-                    captured={game.snapshot.captured}
+                    currentTurn={currentPlayer}
+                    winner={winner}
+                    captured={captured}
                 />
                 <div className="game-controls">
-                    <ActionButton
-                        text="Reset game"
-                        onClick={() => {
-                            if (window.confirm('Restart the game?')) {
-                                handleReset();
-                            }
-                        }}
-                    />
+                    {confirmReset ? (
+                        <div className="confirm-reset">
+                            <span className="confirm-reset__text">Restart the game?</span>
+                            <div className="confirm-reset__actions">
+                                <ActionButton text="Yes" onClick={handleConfirmReset} />
+                                <ActionButton
+                                    text="Cancel"
+                                    onClick={() => setConfirmReset(false)}
+                                />
+                            </div>
+                        </div>
+                    ) : (
+                        <ActionButton
+                            text="Reset game"
+                            onClick={() => setConfirmReset(true)}
+                        />
+                    )}
                     <ActionButton
                         text="Undo"
-                        onClick={handleUndo}
-                        disabled={game.snapshot.moveLog.length === 0}
+                        onClick={onUndo}
+                        disabled={moveLog.length === 0}
                     />
                 </div>
                 <MoveHistory
-                    moveLog={game.snapshot.moveLog}
-                    activeIndex={highlights.historyIndex}
-                    onSelect={highlights.selectHistory}
+                    moveLog={moveLog}
+                    activeIndex={historyIndex}
+                    onSelect={onSelectHistory}
                 />
             </aside>
         </div>
