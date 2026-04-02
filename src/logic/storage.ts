@@ -101,9 +101,6 @@ export const isSavedData = (saved: unknown): saved is SavedData => {
     return true;
 };
 
-export const sanitizeSavedData = (saved: SavedData | null): SavedData | null =>
-    isSavedData(saved) ? saved : null;
-
 const normalizeTimeoutWinner = (game: LegacyGameCoreState): GameCoreState['timeoutWinner'] => {
     if (game.timeoutWinner === null) return null;
     if (isPlayer(game.timeoutWinner)) return game.timeoutWinner;

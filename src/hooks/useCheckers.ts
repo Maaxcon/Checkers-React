@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { GAME_SETTINGS } from '../constants/index.ts';
 import type { Player } from '../constants/index.ts';
 import type { SavedData, TimerState } from '../types/game.ts';
@@ -79,7 +79,7 @@ export const useCheckers = ({ saved, getTimerSnapshot }: UseCheckersOptions) => 
         select
     });
 
-    useEffect(() => {
+    useLayoutEffect(() => {
         interactionStateRef.current = {
             winner,
             game,
