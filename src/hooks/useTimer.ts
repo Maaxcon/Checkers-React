@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
-import { PLAYERS } from '../constants/index.ts';
+import { useCallback, useEffect, useMemo, useReducer } from 'react';
 import type { Player } from '../constants/index.ts';
 import type { TimerState } from '../types/game.ts';
 import { createInitialTimerState, getTimerTimes, timerReducer } from '../logic/timer.ts';
@@ -7,45 +6,21 @@ import { createInitialTimerState, getTimerTimes, timerReducer } from '../logic/t
 export type TimerHookOptions = {
     initial?: TimerState | null;
     isRunning: boolean;
-    onTimeout: (winner: Player) => void;
 };
 
-export const useTimer = ({ initial, isRunning, onTimeout }: TimerHookOptions) => {
+export const useTimer = ({ initial, isRunning }: TimerHookOptions) => {
     const [state, dispatch] = useReducer(
         timerReducer,
         initial ?? createInitialTimerState()
     );
 
-    const timeoutFiredRef = useRef(false);
-    const stateRef = useRef(state);
-
     useEffect(() => {
-        stateRef.current = state;
-    }, [state]);
-
-    useEffect(() => {
-        if (!isRunning) {
-            timeoutFiredRef.current = false;
-            return;
-        }
+        if (!isRunning) return;
         const id = window.setInterval(() => {
             dispatch({ type: 'TICK' });
         }, 1000);
         return () => window.clearInterval(id);
     }, [dispatch, isRunning]);
-
-    useEffect(() => {
-        if (!isRunning || timeoutFiredRef.current) return;
-        if (state.light <= 0) {
-            timeoutFiredRef.current = true;
-            onTimeout(PLAYERS.DARK);
-            return;
-        }
-        if (state.dark <= 0) {
-            timeoutFiredRef.current = true;
-            onTimeout(PLAYERS.LIGHT);
-        }
-    }, [isRunning, onTimeout, state.dark, state.light]);
 
     const times = useMemo(() => getTimerTimes(state), [state]);
 
@@ -65,15 +40,12 @@ export const useTimer = ({ initial, isRunning, onTimeout }: TimerHookOptions) =>
         dispatch({ type: 'RESTORE', state: timer });
     }, []);
 
-    const getSnapshot = useCallback(() => stateRef.current, []);
-
     return {
         state,
         times,
         switchPlayer,
         setActivePlayer,
         reset,
-        restore,
-        getSnapshot
+        restore
     };
 };
