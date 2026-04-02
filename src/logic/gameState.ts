@@ -7,7 +7,8 @@ export const createInitialGameState = (): GameState => ({
     turn: PLAYERS.LIGHT,
     multiJump: null,
     timeoutWinner: null,
-    selected: null
+    selected: null,
+    lastMove: null
 });
 
 export const extractCoreState = (game: GameState): GameCoreState => ({

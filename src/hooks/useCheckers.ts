@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { GAME_SETTINGS } from '../constants/index.ts';
 import type { Player } from '../constants/index.ts';
-import type { Position, SavedData, TimerState } from '../types/game.ts';
+import type { SavedData, TimerState } from '../types/game.ts';
 import { getCapturedCounts } from '../logic/selectors.ts';
 import { calculateWinner, getMandatoryPieces, getValidMoves } from '../logic/rules.ts';
 import { buildSavedData } from '../logic/storage.ts';
@@ -22,6 +22,7 @@ export const useCheckers = ({ saved, getTimerSnapshot }: UseCheckersOptions) => 
         applyGameMove,
         undo,
         reset,
+        clearLastMove,
         setTimeoutWinner
     } = useGameReducer(saved);
 
@@ -31,8 +32,6 @@ export const useCheckers = ({ saved, getTimerSnapshot }: UseCheckersOptions) => 
         selectHistory,
         clearHighlights
     } = useHighlights(historyState.moveLog);
-
-    const [lastMove, setLastMove] = useState<{ from: Position; to: Position } | null>(null);
 
     const coreState = useMemo(
         () => ({
@@ -103,12 +102,12 @@ export const useCheckers = ({ saved, getTimerSnapshot }: UseCheckersOptions) => 
     ]);
 
     useEffect(() => {
-        if (!lastMove) return;
+        if (!game.lastMove) return;
         const timeoutId = window.setTimeout(() => {
-            setLastMove(null);
+            clearLastMove();
         }, GAME_SETTINGS.ANIMATION_DURATION_MS);
         return () => window.clearTimeout(timeoutId);
-    }, [lastMove]);
+    }, [clearLastMove, game.lastMove]);
 
     const handleCellClick = useCallback((row: number, col: number) => {
         const {
@@ -131,7 +130,6 @@ export const useCheckers = ({ saved, getTimerSnapshot }: UseCheckersOptions) => 
             const move = currentValidMoves.find(move => move.row === row && move.col === col);
             if (!move) return;
 
-            setLastMove({ from: currentGame.selected, to: { row: move.row, col: move.col } });
             currentApplyGameMove(currentGame.selected, move, currentGetTimerSnapshot());
             currentClearHighlights();
             return;
@@ -172,14 +170,12 @@ export const useCheckers = ({ saved, getTimerSnapshot }: UseCheckersOptions) => 
     const handleReset = useCallback(() => {
         reset();
         clearHighlights();
-        setLastMove(null);
     }, [clearHighlights, reset]);
 
     const handleUndo = useCallback((): TimerState | null => {
         const lastTimer = undo();
         if (!lastTimer) return null;
         clearHighlights();
-        setLastMove(null);
         return lastTimer ?? null;
     }, [clearHighlights, undo]);
 
@@ -204,6 +200,6 @@ export const useCheckers = ({ saved, getTimerSnapshot }: UseCheckersOptions) => 
         onUndo: handleUndo,
         onTimeout: handleTimeout,
         onSelectHistory: selectHistory,
-        lastMove
+        lastMove: game.lastMove
     };
 };

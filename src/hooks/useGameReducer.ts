@@ -32,7 +32,11 @@ export const useGameReducer = (saved: SavedData | null) => {
         dispatch({
             type: 'APPLY_MOVE',
             game: result.state,
-            selected
+            selected,
+            lastMove: {
+                from: { ...from },
+                to: { row: move.row, col: move.col }
+            }
         });
         dispatchHistory({
             type: 'APPLY_MOVE',
@@ -60,6 +64,10 @@ export const useGameReducer = (saved: SavedData | null) => {
         dispatchHistory({ type: 'RESET' });
     }, []);
 
+    const clearLastMove = useCallback(() => {
+        dispatch({ type: 'CLEAR_LAST_MOVE' });
+    }, []);
+
     const setTimeoutWinner = useCallback((winner: Player) => {
         dispatch({ type: 'SET_TIMEOUT_WINNER', winner });
     }, []);
@@ -71,6 +79,7 @@ export const useGameReducer = (saved: SavedData | null) => {
         applyGameMove,
         undo,
         reset,
+        clearLastMove,
         setTimeoutWinner
     };
 };

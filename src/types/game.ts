@@ -44,6 +44,11 @@ export type MoveLogEntry = {
     to: Position;
 };
 
+export type LastMove = {
+    from: Position;
+    to: Position;
+};
+
 export type TimerState = {
     light: number;
     dark: number;
@@ -72,6 +77,7 @@ export type HistoryState = {
 
 export type GameState = GameCoreState & {
     selected: Position | null;
+    lastMove: LastMove | null;
 };
 
 export type SavedData = {

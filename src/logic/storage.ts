@@ -98,7 +98,8 @@ export const hydrateFromSaved = (
     return {
         game: {
             ...game,
-            selected: null
+            selected: null,
+            lastMove: null
         },
         historyState: {
             moveLog: saved.moveLog ?? [],
