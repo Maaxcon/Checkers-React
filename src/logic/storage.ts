@@ -142,6 +142,17 @@ export const buildSavedData = (
     timer
 });
 
+export const buildSavedDataFromCore = (
+    game: GameCoreState,
+    historyState: HistoryState,
+    timer: TimerState
+): SavedData => ({
+    game,
+    moveLog: historyState.moveLog,
+    history: historyState.history,
+    timer
+});
+
 export const hydrateFromSaved = (
     saved: SavedData | null
 ): { game: GameState; historyState: HistoryState; timer: TimerState } => {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useReducer } from 'react';
+import { useCallback, useEffect, useMemo, useReducer, useRef } from 'react';
 import type { Player } from '../constants/index.ts';
 import type { TimerState } from '../types/game.ts';
 import { createInitialTimerState, getTimerTimes, timerReducer } from '../logic/timer.ts';
@@ -13,6 +13,11 @@ export const useTimer = ({ initial, isRunning }: TimerHookOptions) => {
         timerReducer,
         initial ?? createInitialTimerState()
     );
+    const stateRef = useRef(state);
+
+    useEffect(() => {
+        stateRef.current = state;
+    }, [state]);
 
     useEffect(() => {
         if (!isRunning) return;
@@ -40,12 +45,15 @@ export const useTimer = ({ initial, isRunning }: TimerHookOptions) => {
         dispatch({ type: 'RESTORE', state: timer });
     }, []);
 
+    const getSnapshot = useCallback(() => stateRef.current, []);
+
     return {
         state,
         times,
         switchPlayer,
         setActivePlayer,
         reset,
-        restore
+        restore,
+        getSnapshot
     };
 };

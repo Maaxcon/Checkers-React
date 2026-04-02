@@ -3,22 +3,22 @@ import Board from './components/Board/Board.tsx';
 import GameInfo from './components/GameInfo/GameInfo.tsx';
 import MoveHistory from './components/MoveHistory/MoveHistory.tsx';
 import ActionButton from './components/ActionButton/ActionButton.tsx';
-import TimerPanel from './components/TurnTimer/TimerPanel.tsx';
+import TimerPanel, { type TimerPanelHandle } from './components/TurnTimer/TimerPanel.tsx';
 import WinMessage from './components/WinMessage/WinMessage.tsx';
 import { useCheckers } from './hooks/useCheckers.ts';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { PLAYERS } from './constants/index.ts';
+import { useCallback, useRef, useState } from 'react';
 import { createInitialTimerState } from './logic/timer.ts';
-import { useTimer } from './hooks/useTimer.ts';
 import { loadGame } from './services/StorageService.ts';
 
 function Game() {
     const [confirmReset, setConfirmReset] = useState(false);
     const [saved] = useState(() => loadGame());
     const [initialTimer] = useState(() => saved?.timer ?? createInitialTimerState());
-    const timerSnapshotRef = useRef(initialTimer);
-    const timeoutFiredRef = useRef(false);
-    const getTimerSnapshot = useCallback(() => timerSnapshotRef.current, []);
+    const timerRef = useRef<TimerPanelHandle | null>(null);
+    const getTimerSnapshot = useCallback(
+        () => timerRef.current?.getSnapshot() ?? initialTimer,
+        [initialTimer]
+    );
     const {
         board,
         selected,
@@ -37,71 +37,29 @@ function Game() {
         onTimeout,
         onSelectHistory
     } = useCheckers({ saved, getTimerSnapshot });
-    const {
-        state: timerState,
-        times,
-        switchPlayer,
-        setActivePlayer,
-        reset: resetTimer,
-        restore: restoreTimer
-    } = useTimer({
-        initial: initialTimer,
-        isRunning: winner === null
-    });
-
-    useEffect(() => {
-        timerSnapshotRef.current = timerState;
-    }, [timerState]);
-
-    useEffect(() => {
-        switchPlayer(currentPlayer);
-    }, [currentPlayer, switchPlayer]);
-
-    useEffect(() => {
-        if (winner && timerState.activePlayer !== null) {
-            setActivePlayer(null);
-        }
-    }, [setActivePlayer, timerState.activePlayer, winner]);
-
-    useEffect(() => {
-        if (winner === null) {
-            timeoutFiredRef.current = false;
-        }
-    }, [winner]);
-
-    useEffect(() => {
-        if (winner || timeoutFiredRef.current) return;
-        if (timerState.light <= 0) {
-            timeoutFiredRef.current = true;
-            onTimeout(PLAYERS.DARK);
-            return;
-        }
-        if (timerState.dark <= 0) {
-            timeoutFiredRef.current = true;
-            onTimeout(PLAYERS.LIGHT);
-        }
-    }, [onTimeout, timerState.dark, timerState.light, winner]);
 
     const handleResetGame = useCallback(() => {
         onReset();
-        resetTimer();
+        timerRef.current?.reset();
         setConfirmReset(false);
-    }, [onReset, resetTimer]);
+    }, [onReset]);
 
     const handleUndo = useCallback(() => {
         const lastTimer = onUndo();
         if (lastTimer) {
-            restoreTimer(lastTimer);
+            timerRef.current?.restore(lastTimer);
         }
-    }, [onUndo, restoreTimer]);
+    }, [onUndo]);
 
     return (
         <div className="game-container">
             <div className="game-section">
                 <TimerPanel
-                    times={times}
-                    activePlayer={winner ? null : timerState.activePlayer}
+                    ref={timerRef}
+                    initialTimer={initialTimer}
+                    turn={currentPlayer}
                     winner={winner}
+                    onTimeout={onTimeout}
                 />
                 <Board
                     grid={board}
