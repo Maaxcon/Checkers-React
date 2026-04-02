@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { GAME_SETTINGS } from '../constants/index.ts';
 import type { Player } from '../constants/index.ts';
 import type { Position, SavedData, TimerState } from '../types/game.ts';
@@ -69,6 +69,39 @@ export const useCheckers = ({ saved, getTimerSnapshot }: UseCheckersOptions) => 
         [game.board]
     );
 
+    const interactionStateRef = useRef({
+        winner,
+        game,
+        coreState,
+        validMoves,
+        getTimerSnapshot,
+        applyGameMove,
+        clearHighlights,
+        select
+    });
+
+    useEffect(() => {
+        interactionStateRef.current = {
+            winner,
+            game,
+            coreState,
+            validMoves,
+            getTimerSnapshot,
+            applyGameMove,
+            clearHighlights,
+            select
+        };
+    }, [
+        applyGameMove,
+        clearHighlights,
+        coreState,
+        game,
+        getTimerSnapshot,
+        select,
+        validMoves,
+        winner
+    ]);
+
     useEffect(() => {
         if (!lastMove) return;
         const timeoutId = window.setTimeout(() => {
@@ -78,47 +111,59 @@ export const useCheckers = ({ saved, getTimerSnapshot }: UseCheckersOptions) => 
     }, [lastMove]);
 
     const handleCellClick = useCallback((row: number, col: number) => {
-        if (winner) return;
+        const {
+            winner: currentWinner,
+            game: currentGame,
+            coreState: currentCoreState,
+            validMoves: currentValidMoves,
+            getTimerSnapshot: currentGetTimerSnapshot,
+            applyGameMove: currentApplyGameMove,
+            clearHighlights: currentClearHighlights,
+            select: currentSelect
+        } = interactionStateRef.current;
 
-        const locked = game.multiJump;
-        const isMoveTarget = validMoves.some(move => move.row === row && move.col === col);
+        if (currentWinner) return;
 
-        if (isMoveTarget && game.selected) {
-            const move = validMoves.find(move => move.row === row && move.col === col);
+        const locked = currentGame.multiJump;
+        const isMoveTarget = currentValidMoves.some(move => move.row === row && move.col === col);
+
+        if (isMoveTarget && currentGame.selected) {
+            const move = currentValidMoves.find(move => move.row === row && move.col === col);
             if (!move) return;
 
-            setLastMove({ from: game.selected, to: { row: move.row, col: move.col } });
-            applyGameMove(game.selected, move, getTimerSnapshot());
-            clearHighlights();
+            setLastMove({ from: currentGame.selected, to: { row: move.row, col: move.col } });
+            currentApplyGameMove(currentGame.selected, move, currentGetTimerSnapshot());
+            currentClearHighlights();
             return;
         }
 
-        const piece = game.board[row]?.[col] ?? null;
-        if (piece && piece.player === game.turn) {
+        const piece = currentGame.board[row]?.[col] ?? null;
+        if (piece && piece.player === currentGame.turn) {
             if (locked && (locked.row !== row || locked.col !== col)) {
                 return;
             }
 
-            const isSameSelection = game.selected?.row === row && game.selected?.col === col;
+            const isSameSelection =
+                currentGame.selected?.row === row && currentGame.selected?.col === col;
             if (isSameSelection && !locked) {
-                select(null);
+                currentSelect(null);
                 return;
             }
 
-            const moves = getValidMoves(coreState, row, col);
+            const moves = getValidMoves(currentCoreState, row, col);
             if (moves.length === 0) {
-                select(null);
+                currentSelect(null);
                 return;
             }
 
-            select({ row, col });
+            currentSelect({ row, col });
             return;
         }
 
         if (!locked) {
-            select(null);
+            currentSelect(null);
         }
-    }, [applyGameMove, clearHighlights, coreState, game.board, game.multiJump, game.selected, game.turn, getTimerSnapshot, select, validMoves, winner]);
+    }, []);
 
     useEffect(() => {
         saveGame(buildSavedData(game, historyState, getTimerSnapshot()));
