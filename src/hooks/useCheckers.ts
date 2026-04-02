@@ -2,8 +2,12 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { GAME_SETTINGS } from '../constants/index.ts';
 import type { Player } from '../constants/index.ts';
 import type { SavedData, TimerState } from '../types/game.ts';
-import { getCapturedCounts } from '../logic/selectors.ts';
-import { calculateWinner, getMandatoryPieces, getValidMoves } from '../logic/rules.ts';
+import {
+    getCapturedCounts,
+    selectMandatoryPieces,
+    selectValidMoves
+} from '../logic/selectors.ts';
+import { calculateWinner, getValidMoves } from '../logic/rules.ts';
 import { buildSavedData } from '../logic/storage.ts';
 import { saveGame } from '../services/StorageService.ts';
 import { useGameReducer } from './useGameReducer.ts';
@@ -53,15 +57,15 @@ export const useCheckers = ({ saved, getTimerSnapshot }: UseCheckersOptions) => 
         [boardWinner, game.timeoutWinner]
     );
 
-    const validMoves = useMemo(() => {
-        if (!game.selected || winner) return [];
-        return getValidMoves(coreState, game.selected.row, game.selected.col);
-    }, [coreState, game.selected, winner]);
+    const validMoves = useMemo(
+        () => selectValidMoves(coreState, game.selected, winner),
+        [coreState, game.selected, winner]
+    );
 
-    const mandatoryPieces = useMemo(() => {
-        if (winner) return [];
-        return getMandatoryPieces(coreState);
-    }, [coreState, winner]);
+    const mandatoryPieces = useMemo(
+        () => selectMandatoryPieces(coreState, winner),
+        [coreState, winner]
+    );
 
     const captured = useMemo(
         () => getCapturedCounts(game.board),
