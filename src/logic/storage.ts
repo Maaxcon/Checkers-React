@@ -5,28 +5,14 @@ import type {
     GameState,
     HistoryEntry,
     HistoryState,
+    MoveLogEntry,
+    Position,
     SavedData,
     TimerState
 } from '../types/game.ts';
 import { createInitialGameState, extractCoreState } from './gameState.ts';
 import { calculateWinner } from './rules.ts';
 import { createInitialTimerState } from './timer.ts';
-
-const isObject = (value: unknown): value is Record<string, unknown> =>
-    typeof value === 'object' && value !== null;
-
-const isBoard = (value: unknown): value is Board =>
-    Array.isArray(value) && value.every(row => Array.isArray(row));
-
-export const isSavedData = (saved: unknown): saved is SavedData => {
-    if (!isObject(saved)) return false;
-    if (!('game' in saved) || !isObject(saved.game)) return false;
-    if (!('turn' in saved.game) || !isPlayer(saved.game.turn)) return false;
-    return isBoard(saved.game.board);
-};
-
-export const sanitizeSavedData = (saved: SavedData | null): SavedData | null =>
-    isSavedData(saved) ? saved : null;
 
 type LegacyGameCoreState = {
     board: Board;
@@ -36,8 +22,87 @@ type LegacyGameCoreState = {
     winner?: GameCoreState['turn'] | null;
 };
 
+type LegacyHistoryEntry = {
+    game: LegacyGameCoreState;
+    moveLog?: MoveLogEntry[];
+    timer?: TimerState;
+};
+
+const isObject = (value: unknown): value is Record<string, unknown> =>
+    typeof value === 'object' && value !== null;
+
 const isPlayer = (value: unknown): value is GameCoreState['turn'] =>
     value === PLAYERS.LIGHT || value === PLAYERS.DARK;
+
+const isPosition = (value: unknown): value is Position =>
+    isObject(value) &&
+    typeof value.row === 'number' &&
+    Number.isInteger(value.row) &&
+    typeof value.col === 'number' &&
+    Number.isInteger(value.col);
+
+const isNullablePosition = (value: unknown): value is Position | null =>
+    value === null || isPosition(value);
+
+const isNullablePlayer = (value: unknown): value is GameCoreState['turn'] | null =>
+    value === null || isPlayer(value);
+
+const isPiece = (value: unknown): boolean =>
+    isObject(value) &&
+    isPlayer(value.player) &&
+    typeof value.isKing === 'boolean';
+
+const isBoard = (value: unknown): value is Board =>
+    Array.isArray(value) &&
+    value.every(
+        row => Array.isArray(row) && row.every(cell => cell === null || isPiece(cell))
+    );
+
+const isMoveLogEntry = (value: unknown): value is MoveLogEntry =>
+    isObject(value) &&
+    typeof value.notation === 'string' &&
+    isPosition(value.from) &&
+    isPosition(value.to);
+
+const isMoveLog = (value: unknown): value is MoveLogEntry[] =>
+    Array.isArray(value) && value.every(isMoveLogEntry);
+
+const isTimerState = (value: unknown): value is TimerState =>
+    isObject(value) &&
+    typeof value.light === 'number' &&
+    Number.isFinite(value.light) &&
+    typeof value.dark === 'number' &&
+    Number.isFinite(value.dark) &&
+    isNullablePlayer(value.activePlayer);
+
+const isLegacyGameCoreState = (value: unknown): value is LegacyGameCoreState =>
+    isObject(value) &&
+    isBoard(value.board) &&
+    isPlayer(value.turn) &&
+    (value.multiJump === undefined || isNullablePosition(value.multiJump)) &&
+    (value.timeoutWinner === undefined || isNullablePlayer(value.timeoutWinner)) &&
+    (value.winner === undefined || isNullablePlayer(value.winner));
+
+const isHistoryEntry = (value: unknown): value is HistoryEntry =>
+    isObject(value) &&
+    isLegacyGameCoreState(value.game) &&
+    (value.moveLog === undefined || isMoveLog(value.moveLog)) &&
+    (value.timer === undefined || isTimerState(value.timer));
+
+const isHistory = (value: unknown): value is HistoryEntry[] =>
+    Array.isArray(value) && value.every(isHistoryEntry);
+
+export const isSavedData = (saved: unknown): saved is SavedData => {
+    if (!isObject(saved)) return false;
+    if (!isLegacyGameCoreState(saved.game)) return false;
+    if (saved.moveLog !== undefined && !isMoveLog(saved.moveLog)) return false;
+    if (saved.history !== undefined && !isHistory(saved.history)) return false;
+    if (saved.timer !== undefined && !isTimerState(saved.timer)) return false;
+    return true;
+};
+
+export const sanitizeSavedData = (saved: SavedData | null): SavedData | null =>
+    isSavedData(saved) ? saved : null;
 
 const normalizeTimeoutWinner = (game: LegacyGameCoreState): GameCoreState['timeoutWinner'] => {
     if (game.timeoutWinner === null) return null;
@@ -63,8 +128,8 @@ const normalizeGameCoreState = (game: LegacyGameCoreState): GameCoreState => ({
     timeoutWinner: normalizeTimeoutWinner(game)
 });
 
-const normalizeHistoryEntry = (entry: HistoryEntry): HistoryEntry => ({
-    game: normalizeGameCoreState(entry.game as HistoryEntry['game'] & LegacyGameCoreState),
+const normalizeHistoryEntry = (entry: LegacyHistoryEntry): HistoryEntry => ({
+    game: normalizeGameCoreState(entry.game),
     moveLog: entry.moveLog ?? [],
     timer: entry.timer ?? createInitialTimerState()
 });
@@ -94,7 +159,7 @@ export const hydrateFromSaved = (
         };
     }
 
-    const game = normalizeGameCoreState(saved.game as SavedData['game'] & LegacyGameCoreState);
+    const game = normalizeGameCoreState(saved.game);
 
     return {
         game: {
