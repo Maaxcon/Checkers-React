@@ -39,11 +39,5 @@ export const GAME_SETTINGS = {
     INITIAL_TIME_SECONDS: 300,
 } as const;
 
-export const GAME_RESULTS = {
-    TIMEOUT: 'TIMEOUT',
-} as const;
-
 export type Player = typeof PLAYERS[keyof typeof PLAYERS];
 export type Direction = typeof DIRECTIONS[keyof typeof DIRECTIONS];
-export type GameResult = typeof GAME_RESULTS[keyof typeof GAME_RESULTS];
-

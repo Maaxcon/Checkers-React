@@ -1,4 +1,4 @@
-import type { Player, GameResult } from '../constants/index.ts';
+import type { Player } from '../constants/index.ts';
 
 export type Position = {
     row: number;
@@ -33,10 +33,6 @@ export type CaptureMove = {
 
 export type Move = MoveAction | CaptureMove;
 
-export type MoveResult = {
-    becameKing: boolean;
-};
-
 export type PlayerMoveStatus = {
     hasCaptures: boolean;
     hasMoves: boolean;
@@ -59,8 +55,8 @@ export type TimerTimes = Record<Player, string>;
 export type GameCoreState = {
     board: Board;
     turn: Player;
-    winner: Player | null;
     multiJump: Position | null;
+    timeoutWinner: Player | null;
 };
 
 export type HistoryEntry = {
@@ -69,10 +65,13 @@ export type HistoryEntry = {
     timer: TimerState;
 };
 
-export type GameState = GameCoreState & {
-    selected: Position | null;
+export type HistoryState = {
     moveLog: MoveLogEntry[];
     history: HistoryEntry[];
+};
+
+export type GameState = GameCoreState & {
+    selected: Position | null;
 };
 
 export type SavedData = {
@@ -81,8 +80,6 @@ export type SavedData = {
     history: HistoryEntry[];
     timer: TimerState;
 };
-
-export type GameOverReason = GameResult | null;
 
 export type CapturedCounts = {
     byLight: number;

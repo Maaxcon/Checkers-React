@@ -3,9 +3,9 @@ import { GAME_SETTINGS } from '../constants/index.ts';
 import type { Player } from '../constants/index.ts';
 import type { Position, SavedData, TimerState } from '../types/game.ts';
 import { getCapturedCounts } from '../logic/selectors.ts';
+import { calculateWinner, getMandatoryPieces, getValidMoves } from '../logic/rules.ts';
 import { buildSavedData } from '../logic/storage.ts';
 import { saveGame } from '../services/StorageService.ts';
-import { getMandatoryPieces, getValidMoves } from '../logic/rules.ts';
 import { useGameReducer } from './useGameReducer.ts';
 import { useHighlights } from './useHighlights.ts';
 
@@ -15,14 +15,22 @@ type UseCheckersOptions = {
 };
 
 export const useCheckers = ({ saved, getTimerSnapshot }: UseCheckersOptions) => {
-    const { game, dispatch } = useGameReducer(saved);
+    const {
+        game,
+        historyState,
+        select,
+        applyGameMove,
+        undo,
+        reset,
+        setTimeoutWinner
+    } = useGameReducer(saved);
 
     const {
         historyHighlight,
         historyIndex,
         selectHistory,
         clearHighlights
-    } = useHighlights(game.moveLog);
+    } = useHighlights(historyState.moveLog);
 
     const [lastMove, setLastMove] = useState<{ from: Position; to: Position } | null>(null);
 
@@ -30,21 +38,31 @@ export const useCheckers = ({ saved, getTimerSnapshot }: UseCheckersOptions) => 
         () => ({
             board: game.board,
             turn: game.turn,
-            winner: game.winner,
-            multiJump: game.multiJump
+            multiJump: game.multiJump,
+            timeoutWinner: game.timeoutWinner
         }),
-        [game.board, game.multiJump, game.turn, game.winner]
+        [game.board, game.multiJump, game.timeoutWinner, game.turn]
+    );
+
+    const boardWinner = useMemo(
+        () => calculateWinner(coreState),
+        [coreState]
+    );
+
+    const winner = useMemo(
+        () => game.timeoutWinner ?? boardWinner,
+        [boardWinner, game.timeoutWinner]
     );
 
     const validMoves = useMemo(() => {
-        if (!game.selected) return [];
+        if (!game.selected || winner) return [];
         return getValidMoves(coreState, game.selected.row, game.selected.col);
-    }, [coreState, game.selected]);
+    }, [coreState, game.selected, winner]);
 
-    const mandatoryPieces = useMemo(
-        () => getMandatoryPieces(coreState),
-        [coreState]
-    );
+    const mandatoryPieces = useMemo(() => {
+        if (winner) return [];
+        return getMandatoryPieces(coreState);
+    }, [coreState, winner]);
 
     const captured = useMemo(
         () => getCapturedCounts(game.board),
@@ -60,7 +78,7 @@ export const useCheckers = ({ saved, getTimerSnapshot }: UseCheckersOptions) => 
     }, [lastMove]);
 
     const handleCellClick = useCallback((row: number, col: number) => {
-        if (game.winner) return;
+        if (winner) return;
 
         const locked = game.multiJump;
         const isMoveTarget = validMoves.some(move => move.row === row && move.col === col);
@@ -70,7 +88,7 @@ export const useCheckers = ({ saved, getTimerSnapshot }: UseCheckersOptions) => 
             if (!move) return;
 
             setLastMove({ from: game.selected, to: { row: move.row, col: move.col } });
-            dispatch({ type: 'APPLY_MOVE', from: game.selected, move, timer: getTimerSnapshot() });
+            applyGameMove(game.selected, move, getTimerSnapshot());
             clearHighlights();
             return;
         }
@@ -83,47 +101,46 @@ export const useCheckers = ({ saved, getTimerSnapshot }: UseCheckersOptions) => 
 
             const isSameSelection = game.selected?.row === row && game.selected?.col === col;
             if (isSameSelection && !locked) {
-                dispatch({ type: 'SELECT', position: null });
+                select(null);
                 return;
             }
 
             const moves = getValidMoves(coreState, row, col);
             if (moves.length === 0) {
-                dispatch({ type: 'SELECT', position: null });
+                select(null);
                 return;
             }
 
-            dispatch({ type: 'SELECT', position: { row, col } });
+            select({ row, col });
             return;
         }
 
         if (!locked) {
-            dispatch({ type: 'SELECT', position: null });
+            select(null);
         }
-    }, [clearHighlights, coreState, dispatch, game.board, game.multiJump, game.selected, game.turn, game.winner, getTimerSnapshot, validMoves]);
+    }, [applyGameMove, clearHighlights, coreState, game.board, game.multiJump, game.selected, game.turn, getTimerSnapshot, select, validMoves, winner]);
 
     useEffect(() => {
-        saveGame(buildSavedData(game, getTimerSnapshot()));
-    }, [game, getTimerSnapshot]);
+        saveGame(buildSavedData(game, historyState, getTimerSnapshot()));
+    }, [game, getTimerSnapshot, historyState]);
 
     const handleReset = useCallback(() => {
-        dispatch({ type: 'RESET' });
+        reset();
         clearHighlights();
         setLastMove(null);
-    }, [clearHighlights, dispatch]);
+    }, [clearHighlights, reset]);
 
     const handleUndo = useCallback((): TimerState | null => {
-        if (game.history.length === 0) return null;
-        const lastTimer = game.history[game.history.length - 1]?.timer;
-        dispatch({ type: 'UNDO' });
+        const lastTimer = undo();
+        if (!lastTimer) return null;
         clearHighlights();
         setLastMove(null);
         return lastTimer ?? null;
-    }, [clearHighlights, dispatch, game.history]);
+    }, [clearHighlights, undo]);
 
     const handleTimeout = useCallback((winner: Player) => {
-        dispatch({ type: 'SET_WINNER', winner });
-    }, [dispatch]);
+        setTimeoutWinner(winner);
+    }, [setTimeoutWinner]);
 
     return {
         gameState: game,
@@ -133,9 +150,9 @@ export const useCheckers = ({ saved, getTimerSnapshot }: UseCheckersOptions) => 
         historyHighlight,
         historyIndex,
         mandatoryPieces,
-        moveLog: game.moveLog,
+        moveLog: historyState.moveLog,
         currentPlayer: game.turn,
-        winner: game.winner,
+        winner,
         captured,
         onCellClick: handleCellClick,
         onReset: handleReset,

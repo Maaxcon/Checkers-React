@@ -2,7 +2,7 @@ import { BOARD, PLAYERS } from '../constants/index.ts';
 import type { Player } from '../constants/index.ts';
 import type { GameCoreState, Move, MoveLogEntry, Position } from '../types/game.ts';
 import { appendCaptureNotation, formatMove } from './notation.ts';
-import { calculateWinner, getCapturesForPiece } from './rules.ts';
+import { getCapturesForPiece } from './rules.ts';
 
 export type ApplyMoveResult = {
     state: GameCoreState;
@@ -19,7 +19,7 @@ export const applyMove = (
     from: Position,
     move: Move
 ): ApplyMoveResult => {
-    if (state.winner) {
+    if (state.timeoutWinner) {
         return { state, moveLog, turnEnded: true };
     }
 
@@ -110,7 +110,7 @@ export const applyMove = (
                 ...state,
                 board,
                 multiJump,
-                winner: state.winner
+                timeoutWinner: state.timeoutWinner
             },
             moveLog: updatedMoveLog,
             turnEnded
@@ -123,15 +123,11 @@ export const applyMove = (
         board,
         turn: newTurn,
         multiJump: null,
-        winner: null
+        timeoutWinner: null
     };
-    const winner = calculateWinner(nextState);
 
     return {
-        state: {
-            ...nextState,
-            winner
-        },
+        state: nextState,
         moveLog: updatedMoveLog,
         turnEnded
     };

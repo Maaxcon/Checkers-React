@@ -5,16 +5,14 @@ import { createInitialBoard } from './board.ts';
 export const createInitialGameState = (): GameState => ({
     board: createInitialBoard(),
     turn: PLAYERS.LIGHT,
-    winner: null,
     multiJump: null,
-    selected: null,
-    moveLog: [],
-    history: []
+    timeoutWinner: null,
+    selected: null
 });
 
 export const extractCoreState = (game: GameState): GameCoreState => ({
     board: game.board,
     turn: game.turn,
-    winner: game.winner,
-    multiJump: game.multiJump
+    multiJump: game.multiJump,
+    timeoutWinner: game.timeoutWinner
 });

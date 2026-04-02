@@ -46,7 +46,7 @@ export const getValidMoves = (
     col: number,
     hasGlobalCaptures: boolean | null = null
 ): Move[] => {
-    if (state.winner) return [];
+    if (state.timeoutWinner) return [];
     const piece = state.board[row]?.[col] ?? null;
     if (!isCurrentPlayerPiece(state, piece)) return [];
 
@@ -76,7 +76,7 @@ export const calculateWinner = (state: GameCoreState): Player | null => {
 };
 
 export const getMandatoryPieces = (state: GameCoreState): Position[] => {
-    if (state.winner) return [];
+    if (state.timeoutWinner) return [];
     const { hasCaptures } = getPlayerMoveStatus(state);
     if (!hasCaptures) return [];
 
