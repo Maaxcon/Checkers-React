@@ -1,5 +1,6 @@
 import { GAME_SETTINGS } from '../constants/index.ts';
 import type { SavedData } from '../types/game.ts';
+import { isSavedData } from '../logic/storage.ts';
 
 export const saveGame = (data: SavedData): void => {
     localStorage.setItem(GAME_SETTINGS.STORAGE_KEY, JSON.stringify(data));
@@ -10,7 +11,11 @@ export const loadGame = (): SavedData | null => {
     if (!json) return null;
     try {
         const parsed: unknown = JSON.parse(json);
-        return parsed as SavedData;
+        if (!isSavedData(parsed)) {
+            clearGame();
+            return null;
+        }
+        return parsed;
     } catch {
         clearGame();
         return null;

@@ -10,12 +10,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { PLAYERS } from './constants/index.ts';
 import { createInitialTimerState } from './logic/timer.ts';
 import { useTimer } from './hooks/useTimer.ts';
-import { sanitizeSavedData } from './logic/storage.ts';
 import { loadGame } from './services/StorageService.ts';
 
 function Game() {
     const [confirmReset, setConfirmReset] = useState(false);
-    const [saved] = useState(() => sanitizeSavedData(loadGame()));
+    const [saved] = useState(() => loadGame());
     const [initialTimer] = useState(() => saved?.timer ?? createInitialTimerState());
     const timerSnapshotRef = useRef(initialTimer);
     const timeoutFiredRef = useRef(false);
@@ -83,18 +82,18 @@ function Game() {
         }
     }, [onTimeout, timerState.dark, timerState.light, winner]);
 
-    const handleResetGame = () => {
+    const handleResetGame = useCallback(() => {
         onReset();
         resetTimer();
         setConfirmReset(false);
-    };
+    }, [onReset, resetTimer]);
 
-    const handleUndo = () => {
+    const handleUndo = useCallback(() => {
         const lastTimer = onUndo();
         if (lastTimer) {
             restoreTimer(lastTimer);
         }
-    };
+    }, [onUndo, restoreTimer]);
 
     return (
         <div className="game-container">

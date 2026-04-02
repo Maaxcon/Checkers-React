@@ -2,10 +2,8 @@ export const BOARD = {
     ROWS: 8,
     COLS: 8,
     TOP_ROW: 0,
-    get BOTTOM_ROW() { return this.ROWS - 1; },
-    get PIECE_ROWS() {
-        return Math.floor((this.ROWS - 2) / 2);
-    }
+    BOTTOM_ROW: 7,
+    PIECE_ROWS: 3
 } as const;
 
 export const PLAYERS = {

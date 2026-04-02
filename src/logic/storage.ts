@@ -18,14 +18,15 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
 const isBoard = (value: unknown): value is Board =>
     Array.isArray(value) && value.every(row => Array.isArray(row));
 
-const isValidSavedData = (saved: SavedData | null): saved is SavedData => {
-    if (!saved || !isObject(saved)) return false;
+export const isSavedData = (saved: unknown): saved is SavedData => {
+    if (!isObject(saved)) return false;
     if (!('game' in saved) || !isObject(saved.game)) return false;
+    if (!('turn' in saved.game) || !isPlayer(saved.game.turn)) return false;
     return isBoard(saved.game.board);
 };
 
 export const sanitizeSavedData = (saved: SavedData | null): SavedData | null =>
-    isValidSavedData(saved) ? saved : null;
+    isSavedData(saved) ? saved : null;
 
 type LegacyGameCoreState = {
     board: Board;
@@ -82,7 +83,7 @@ export const buildSavedData = (
 export const hydrateFromSaved = (
     saved: SavedData | null
 ): { game: GameState; historyState: HistoryState; timer: TimerState } => {
-    if (!isValidSavedData(saved)) {
+    if (!isSavedData(saved)) {
         return {
             game: createInitialGameState(),
             historyState: {
