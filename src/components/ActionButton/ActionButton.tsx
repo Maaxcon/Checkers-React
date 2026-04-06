@@ -11,7 +11,7 @@ type ActionButtonProps = {
 function ActionButton({
     text,
     onClick,
-    className = 'btn-undo',
+    className = 'btn',
     disabled = false,
     type = 'button'
 }: ActionButtonProps) {

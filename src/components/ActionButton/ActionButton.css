@@ -1,3 +1,4 @@
+.btn,
 .btn-undo {
     padding: 10px 20px;
     font-size: var(--fs-btn);
@@ -12,6 +13,7 @@
     margin-bottom: 20px;
 }
 
+.btn:hover,
 .btn-undo:hover {
     background-color: var(--color-accent);
     color: var(--color-text-btn);

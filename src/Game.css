@@ -62,16 +62,19 @@ body {
     gap: 10px;
 }
 
+.confirm-reset__actions .btn,
 .confirm-reset__actions .btn-undo {
     margin-bottom: 0;
     width: auto;
 }
 
+.game-controls .btn,
 .game-controls .btn-undo {
     margin-bottom: 0;
     width: 100%;
 }
 
+.game-controls .btn:disabled,
 .game-controls .btn-undo:disabled {
     opacity: 0.5;
     cursor: not-allowed;
