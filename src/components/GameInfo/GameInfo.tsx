@@ -1,7 +1,7 @@
 import React from 'react';
-import { PLAYERS } from '../../constants/index.ts';
 import type { Player } from '../../constants/index.ts';
 import type { CapturedCounts } from '../../types/game.ts';
+import { getPlayerLabel } from '../../logic/labels.ts';
 import './GameInfo.css';
 
 type GameInfoProps = {
@@ -9,8 +9,6 @@ type GameInfoProps = {
     winner: Player | null;
     captured: CapturedCounts;
 };
-
-const getPlayerLabel = (player: Player) => (player === PLAYERS.LIGHT ? 'Light' : 'Dark');
 
 function GameInfo({ currentTurn, winner, captured }: GameInfoProps) {
     return (

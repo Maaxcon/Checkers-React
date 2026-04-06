@@ -1,6 +1,6 @@
 import React from 'react';
-import { PLAYERS } from '../../constants/index.ts';
 import type { Player } from '../../constants/index.ts';
+import { getPlayerLabel } from '../../logic/labels.ts';
 import ActionButton from '../ActionButton/ActionButton.tsx';
 import './WinMessage.css';
 
@@ -9,8 +9,6 @@ type WinMessageProps = {
     onRestart: () => void;
 };
 
-const getWinnerLabel = (winner: Player) => (winner === PLAYERS.LIGHT ? 'Light' : 'Dark');
-
 function WinMessage({ winner, onRestart }: WinMessageProps) {
     if (!winner) {
         return null;
@@ -18,7 +16,7 @@ function WinMessage({ winner, onRestart }: WinMessageProps) {
 
     return (
         <div className="win-message" role="dialog" aria-live="polite">
-            <h2 className="win-title">Winner: {getWinnerLabel(winner)}</h2>
+            <h2 className="win-title">Winner: {getPlayerLabel(winner)}</h2>
             <ActionButton text="New game" onClick={onRestart} className="btn-restart" />
         </div>
     );
