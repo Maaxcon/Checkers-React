@@ -21,7 +21,9 @@ export const CSS = {
     CHECKER_DARK: 'checker--dark',
     CHECKER_KING: 'checker--king',
     SELECTED: 'is-selected',
-    HIGHLIGHT: 'is-highlighted'
+    HIGHLIGHT: 'is-highlighted',
+    HISTORY_HIGHLIGHT: 'is-history-highlight',
+    MANDATORY: 'is-mandatory'
 } as const;
 
 export const DIRECTIONS = {

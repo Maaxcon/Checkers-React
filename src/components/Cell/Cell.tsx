@@ -36,8 +36,8 @@ function Cell({
         isBlack ? CSS.CELL_BLACK : CSS.CELL_WHITE,
         isSelected ? CSS.SELECTED : '',
         isHighlighted ? CSS.HIGHLIGHT : '',
-        isHistoryHighlight ? 'is-history-highlight' : '',
-        isMandatory ? 'is-mandatory' : ''
+        isHistoryHighlight ? CSS.HISTORY_HIGHLIGHT : '',
+        isMandatory ? CSS.MANDATORY : ''
     ].filter(Boolean).join(' ');
 
     const handleClick = useCallback(() => {
