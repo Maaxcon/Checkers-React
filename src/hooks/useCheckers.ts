@@ -8,7 +8,6 @@ import {
     selectValidMoves
 } from '../logic/selectors.ts';
 import { calculateWinner, getValidMoves } from '../logic/rules.ts';
-import { buildSavedData } from '../logic/storage.ts';
 import { saveGame } from '../services/StorageService.ts';
 import { useGameReducer } from './useGameReducer.ts';
 import { useHighlights } from './useHighlights.ts';
@@ -168,8 +167,13 @@ export const useCheckers = ({ saved, getTimerSnapshot }: UseCheckersOptions) => 
     }, []);
 
     useEffect(() => {
-        saveGame(buildSavedData(game, historyState, getTimerSnapshot()));
-    }, [game, getTimerSnapshot, historyState]);
+        saveGame({
+            game: coreState,
+            moveLog: historyState.moveLog,
+            history: historyState.history,
+            timer: getTimerSnapshot()
+        });
+    }, [coreState, getTimerSnapshot, historyState]);
 
     const handleReset = useCallback(() => {
         reset();
