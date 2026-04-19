@@ -1,48 +1,9 @@
-import type { Player } from '../constants/index.ts';
-
-export type ApiPosition = {
-    row: number;
-    col: number;
-};
-
-export type ApiPiece = {
-    player: Player;
-    isKing: boolean;
-};
-
-export type ApiBoard = (ApiPiece | null)[][];
-
-export type ApiGameState = {
-    status: string;
-    board: ApiBoard;
-    turn: Player;
-    winner: Player | null;
-    timeRemaining: number;
-    lightTimeRemaining: number;
-    darkTimeRemaining: number;
-};
-
-export type ApiGameStateWithId = ApiGameState & {
-    id: string;
-};
-
-export type ApiMoveRequest = {
-    fromRow: number;
-    fromCol: number;
-    toRow: number;
-    toCol: number;
-};
-
-export type ApiMoveLogEntry = {
-    notation: string;
-    from: ApiPosition;
-    to: ApiPosition;
-};
-
-export type ApiMoveHistory = {
-    gameId: string;
-    moveLog: ApiMoveLogEntry[];
-};
+import type {
+    ApiGameState,
+    ApiGameStateWithId,
+    ApiMoveHistory,
+    ApiMoveRequest
+} from '../types/api.ts';
 
 const DEFAULT_API_BASE_URL = 'http://127.0.0.1:8000/api';
 const rawEnv = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
