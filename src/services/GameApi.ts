@@ -36,10 +36,13 @@ export const getGame = (gameId: string) =>
     request<ApiGameStateWithId>(`/games/${gameId}/`);
 
 export const move = (gameId: string, body: ApiMoveRequest) =>
-    request<ApiGameState>(`/games/${gameId}/move/`, {
-        method: 'POST',
-        body: JSON.stringify(body)
-    });
+    {
+        const { fromRow, fromCol, toRow, toCol } = body;
+        return request<ApiGameState>(`/games/${gameId}/move/`, {
+            method: 'POST',
+            body: JSON.stringify({ fromRow, fromCol, toRow, toCol })
+        });
+    };
 
 export const undo = (gameId: string) =>
     request<ApiGameState>(`/games/${gameId}/undo/`, { method: 'POST' });
