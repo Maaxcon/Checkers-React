@@ -1,5 +1,13 @@
 import { useCallback, useReducer } from 'react';
-import type { Move, Position, SavedData, TimerState } from '../types/game.ts';
+import type {
+    GameCoreState,
+    LastMove,
+    Move,
+    MoveLogEntry,
+    Position,
+    SavedData,
+    TimerState
+} from '../types/game.ts';
 import type { Player } from '../constants/index.ts';
 import { applyMove } from '../logic/applyMove.ts';
 import { gameReducer } from '../logic/gameReducer.ts';
@@ -72,6 +80,16 @@ export const useGameReducer = (saved: SavedData | null) => {
         dispatch({ type: 'SET_TIMEOUT_WINNER', winner });
     }, []);
 
+    const setFromServer = useCallback((nextGame: GameCoreState, moveLog: MoveLogEntry[], lastMove: LastMove | null) => {
+        dispatch({
+            type: 'APPLY_MOVE',
+            game: nextGame,
+            selected: nextGame.multiJump ? { ...nextGame.multiJump } : null,
+            lastMove
+        });
+        dispatchHistory({ type: 'SET_FROM_SERVER', moveLog });
+    }, []);
+
     return {
         game,
         historyState,
@@ -80,6 +98,7 @@ export const useGameReducer = (saved: SavedData | null) => {
         undo,
         reset,
         clearLastMove,
-        setTimeoutWinner
+        setTimeoutWinner,
+        setFromServer
     };
 };

@@ -7,11 +7,12 @@ import type { SavedData } from '../types/game.ts';
 
 type GameBootstrapState = {
     saved: SavedData | null;
+    gameId: string | null;
     error: string | null;
     isLoading: boolean;
 };
 
-const bootstrapSavedData = async (): Promise<SavedData> => {
+const bootstrapSavedData = async (): Promise<{ saved: SavedData; gameId: string }> => {
     let gameId = loadGameId();
     let gameState: ApiGameStateWithId | null = null;
 
@@ -34,11 +35,15 @@ const bootstrapSavedData = async (): Promise<SavedData> => {
     }
 
     const history = await getHistory(gameId);
-    return toSavedData(gameState, history.moveLog);
+    return {
+        saved: toSavedData(gameState, history.moveLog),
+        gameId
+    };
 };
 
 export const useGameBootstrap = (): GameBootstrapState => {
     const [saved, setSaved] = useState<SavedData | null>(null);
+    const [gameId, setGameId] = useState<string | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
@@ -47,9 +52,10 @@ export const useGameBootstrap = (): GameBootstrapState => {
 
         const runBootstrap = async () => {
             try {
-                const initialSavedData = await bootstrapSavedData();
+                const initial = await bootstrapSavedData();
                 if (cancelled) return;
-                setSaved(initialSavedData);
+                setSaved(initial.saved);
+                setGameId(initial.gameId);
                 setError(null);
             } catch (err) {
                 if (cancelled) return;
@@ -69,5 +75,5 @@ export const useGameBootstrap = (): GameBootstrapState => {
         };
     }, []);
 
-    return { saved, error, isLoading };
+    return { saved, gameId, error, isLoading };
 };

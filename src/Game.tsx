@@ -13,9 +13,10 @@ import type { SavedData } from './types/game.ts';
 
 type GameSessionProps = {
     saved: SavedData;
+    gameId: string;
 };
 
-function GameSession({ saved }: GameSessionProps) {
+function GameSession({ saved, gameId }: GameSessionProps) {
     const [confirmReset, setConfirmReset] = useState(false);
     const [initialTimer] = useState(() => saved?.timer ?? createInitialTimerState());
     const timerApiRef = useRef<TimerPanelApi | null>(null);
@@ -25,6 +26,9 @@ function GameSession({ saved }: GameSessionProps) {
     );
     const handleTimerReady = useCallback((api: TimerPanelApi) => {
         timerApiRef.current = api;
+    }, []);
+    const syncTimerFromServer = useCallback((timer: SavedData['timer']) => {
+        timerApiRef.current?.restore(timer);
     }, []);
     const {
         board,
@@ -36,6 +40,7 @@ function GameSession({ saved }: GameSessionProps) {
         moveLog,
         currentPlayer,
         winner,
+        canUndo,
         captured,
         lastMove,
         onCellClick,
@@ -43,7 +48,7 @@ function GameSession({ saved }: GameSessionProps) {
         onUndo,
         onTimeout,
         onSelectHistory
-    } = useCheckers({ saved, getTimerSnapshot });
+    } = useCheckers({ saved, gameId, getTimerSnapshot, syncTimerFromServer });
 
     const handleResetGame = useCallback(() => {
         onReset();
@@ -106,7 +111,7 @@ function GameSession({ saved }: GameSessionProps) {
                     <ActionButton
                         text="Undo"
                         onClick={handleUndo}
-                        disabled={moveLog.length === 0}
+                        disabled={!canUndo}
                     />
                 </div>
                 <MoveHistory
@@ -120,7 +125,7 @@ function GameSession({ saved }: GameSessionProps) {
 }
 
 function Game() {
-    const { saved, error, isLoading } = useGameBootstrap();
+    const { saved, gameId, error, isLoading } = useGameBootstrap();
 
     if (isLoading) {
         return (
@@ -130,7 +135,7 @@ function Game() {
         );
     }
 
-    if (!saved) {
+    if (!saved || !gameId) {
         return (
             <div className="game-container">
                 <div className="game-section">Failed to load game: {error}</div>
@@ -138,7 +143,7 @@ function Game() {
         );
     }
 
-    return <GameSession saved={saved} />;
+    return <GameSession saved={saved} gameId={gameId} />;
 }
 
 export default Game;

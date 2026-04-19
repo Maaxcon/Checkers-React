@@ -17,6 +17,7 @@ export type HistoryAction =
         shouldRecordHistory: boolean;
     }
     | { type: 'UNDO' }
+    | { type: 'SET_FROM_SERVER'; moveLog: MoveLogEntry[] }
     | { type: 'RESET' };
 
 const cloneMoveLog = (moveLog: MoveLogEntry[]): MoveLogEntry[] =>
@@ -70,6 +71,11 @@ export const historyReducer = (state: HistoryState, action: HistoryAction): Hist
                 history: state.history.slice(0, -1)
             };
         }
+        case 'SET_FROM_SERVER':
+            return {
+                moveLog: cloneMoveLog(action.moveLog),
+                history: []
+            };
         case 'RESET':
             return createInitialHistoryState();
         default:

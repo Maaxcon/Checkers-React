@@ -8,25 +8,38 @@ import {
     selectValidMoves
 } from '../logic/selectors.ts';
 import { calculateWinner, getValidMoves } from '../logic/rules.ts';
+import { getHistory, move as postMove } from '../services/GameApi.ts';
 import { saveGame } from '../services/StorageService.ts';
 import { useGameReducer } from './useGameReducer.ts';
 import { useHighlights } from './useHighlights.ts';
+import type { ApiMoveLogEntry } from '../types/api.ts';
+
+const msToSeconds = (value: number): number =>
+    Math.max(0, Math.floor(value / 1000));
+
+const toMoveLogEntry = (entry: ApiMoveLogEntry) => ({
+    notation: entry.notation,
+    from: { ...entry.from },
+    to: { ...entry.to }
+});
 
 type UseCheckersOptions = {
     saved: SavedData | null;
+    gameId: string;
     getTimerSnapshot: () => TimerState;
+    syncTimerFromServer: (timer: TimerState) => void;
 };
 
-export const useCheckers = ({ saved, getTimerSnapshot }: UseCheckersOptions) => {
+export const useCheckers = ({ saved, gameId, getTimerSnapshot, syncTimerFromServer }: UseCheckersOptions) => {
     const {
         game,
         historyState,
         select,
-        applyGameMove,
         undo,
         reset,
         clearLastMove,
-        setTimeoutWinner
+        setTimeoutWinner,
+        setFromServer
     } = useGameReducer(saved);
 
     const {
@@ -71,13 +84,16 @@ export const useCheckers = ({ saved, getTimerSnapshot }: UseCheckersOptions) => 
         [game.board]
     );
 
+    const moveInFlightRef = useRef(false);
+
     const interactionStateRef = useRef({
         winner,
+        gameId,
         game,
         coreState,
         validMoves,
-        getTimerSnapshot,
-        applyGameMove,
+        syncTimerFromServer,
+        setFromServer,
         clearHighlights,
         select
     });
@@ -85,21 +101,23 @@ export const useCheckers = ({ saved, getTimerSnapshot }: UseCheckersOptions) => 
     useLayoutEffect(() => {
         interactionStateRef.current = {
             winner,
+            gameId,
             game,
             coreState,
             validMoves,
-            getTimerSnapshot,
-            applyGameMove,
+            syncTimerFromServer,
+            setFromServer,
             clearHighlights,
             select
         };
     }, [
-        applyGameMove,
         clearHighlights,
         coreState,
         game,
-        getTimerSnapshot,
+        gameId,
         select,
+        setFromServer,
+        syncTimerFromServer,
         validMoves,
         winner
     ]);
@@ -115,11 +133,12 @@ export const useCheckers = ({ saved, getTimerSnapshot }: UseCheckersOptions) => 
     const handleCellClick = useCallback((row: number, col: number) => {
         const {
             winner: currentWinner,
+            gameId: currentGameId,
             game: currentGame,
             coreState: currentCoreState,
             validMoves: currentValidMoves,
-            getTimerSnapshot: currentGetTimerSnapshot,
-            applyGameMove: currentApplyGameMove,
+            syncTimerFromServer: currentSyncTimerFromServer,
+            setFromServer: currentSetFromServer,
             clearHighlights: currentClearHighlights,
             select: currentSelect
         } = interactionStateRef.current;
@@ -130,11 +149,54 @@ export const useCheckers = ({ saved, getTimerSnapshot }: UseCheckersOptions) => 
         const isMoveTarget = currentValidMoves.some(move => move.row === row && move.col === col);
 
         if (isMoveTarget && currentGame.selected) {
-            const move = currentValidMoves.find(move => move.row === row && move.col === col);
+            if (moveInFlightRef.current) return;
+
+            const selected = { ...currentGame.selected };
+            const move = currentValidMoves.find(item => item.row === row && item.col === col);
             if (!move) return;
 
-            currentApplyGameMove(currentGame.selected, move, currentGetTimerSnapshot());
-            currentClearHighlights();
+            const previousTurn = currentGame.turn;
+            const from = { ...selected };
+            const to = { row: move.row, col: move.col };
+            const wasCapture = move.type === 'capture';
+
+            moveInFlightRef.current = true;
+            void (async () => {
+                try {
+                    const serverState = await postMove(currentGameId, {
+                        fromRow: from.row,
+                        fromCol: from.col,
+                        toRow: to.row,
+                        toCol: to.col
+                    });
+                    const history = await getHistory(currentGameId);
+
+                    const multiJump = wasCapture && serverState.turn === previousTurn
+                        ? { ...to }
+                        : null;
+
+                    currentSetFromServer(
+                        {
+                            board: serverState.board,
+                            turn: serverState.turn,
+                            multiJump,
+                            timeoutWinner: serverState.winner
+                        },
+                        history.moveLog.map(toMoveLogEntry),
+                        { from, to }
+                    );
+                    currentSyncTimerFromServer({
+                        light: msToSeconds(serverState.lightTimeRemaining),
+                        dark: msToSeconds(serverState.darkTimeRemaining),
+                        activePlayer: serverState.winner ? null : serverState.turn
+                    });
+                    currentClearHighlights();
+                } catch (error) {
+                    console.error(error);
+                } finally {
+                    moveInFlightRef.current = false;
+                }
+            })();
             return;
         }
 
@@ -202,6 +264,7 @@ export const useCheckers = ({ saved, getTimerSnapshot }: UseCheckersOptions) => 
         moveLog: historyState.moveLog,
         currentPlayer: game.turn,
         winner,
+        canUndo: historyState.history.length > 0,
         captured,
         onCellClick: handleCellClick,
         onReset: handleReset,

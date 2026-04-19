@@ -4,7 +4,7 @@ import { createInitialGameState } from './gameState.ts';
 
 export type GameAction =
     | { type: 'SELECT'; position: Position | null }
-    | { type: 'APPLY_MOVE'; game: GameCoreState; selected: Position | null; lastMove: LastMove }
+    | { type: 'APPLY_MOVE'; game: GameCoreState; selected: Position | null; lastMove: LastMove | null }
     | { type: 'UNDO'; game: GameCoreState }
     | { type: 'CLEAR_LAST_MOVE' }
     | { type: 'RESET' }
