@@ -20,10 +20,6 @@ function GameSession({ saved, gameId }: GameSessionProps) {
     const [confirmReset, setConfirmReset] = useState(false);
     const [initialTimer] = useState(() => saved?.timer ?? createInitialTimerState());
     const timerApiRef = useRef<TimerPanelApi | null>(null);
-    const getTimerSnapshot = useCallback(
-        () => timerApiRef.current?.getSnapshot() ?? initialTimer,
-        [initialTimer]
-    );
     const handleTimerReady = useCallback((api: TimerPanelApi) => {
         timerApiRef.current = api;
     }, []);
@@ -48,7 +44,7 @@ function GameSession({ saved, gameId }: GameSessionProps) {
         onUndo,
         onTimeout,
         onSelectHistory
-    } = useCheckers({ saved, gameId, getTimerSnapshot, syncTimerFromServer });
+    } = useCheckers({ saved, gameId, syncTimerFromServer });
 
     const handleResetGame = useCallback(() => {
         onReset();

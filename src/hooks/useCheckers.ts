@@ -15,7 +15,6 @@ import {
     restart as postRestart,
     undo as postUndo
 } from '../services/GameApi.ts';
-import { saveGame } from '../services/StorageService.ts';
 import { useGameReducer } from './useGameReducer.ts';
 import { useHighlights } from './useHighlights.ts';
 import type { ApiGameState, ApiMoveLogEntry } from '../types/api.ts';
@@ -50,11 +49,10 @@ const toMoveLogEntry = (entry: ApiMoveLogEntry) => ({
 type UseCheckersOptions = {
     saved: SavedData | null;
     gameId: string;
-    getTimerSnapshot: () => TimerState;
     syncTimerFromServer: (timer: TimerState) => void;
 };
 
-export const useCheckers = ({ saved, gameId, getTimerSnapshot, syncTimerFromServer }: UseCheckersOptions) => {
+export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersOptions) => {
     const {
         game,
         historyState,
@@ -286,15 +284,6 @@ export const useCheckers = ({ saved, gameId, getTimerSnapshot, syncTimerFromServ
             currentSelect(null);
         }
     }, [applyServerSnapshot]);
-
-    useEffect(() => {
-        saveGame({
-            game: coreState,
-            moveLog: historyState.moveLog,
-            history: historyState.history,
-            timer: getTimerSnapshot()
-        });
-    }, [coreState, getTimerSnapshot, historyState]);
 
     const handleReset = useCallback(() => {
         if (moveInFlightRef.current) return;
