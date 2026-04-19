@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import type { Board, HistoryHighlight, Move, Position } from '../../types/game.ts';
 import { CSS } from '../../constants/index.ts';
 import Cell from '../Cell/Cell.tsx';
@@ -23,13 +23,22 @@ function Board({
     onCellClick,
     lastMove
 }: BoardProps) {
-    const validMoveKeys = new Set(validMoves.map(move => `${move.row}-${move.col}`));
-    const historyKeys = new Set(
-        historyHighlight
-            ? [`${historyHighlight.from.row}-${historyHighlight.from.col}`, `${historyHighlight.to.row}-${historyHighlight.to.col}`]
-            : []
+    const validMoveKeys = useMemo(
+        () => new Set(validMoves.map(move => `${move.row}-${move.col}`)),
+        [validMoves]
     );
-    const mandatoryKeys = new Set(mandatoryPieces.map(piece => `${piece.row}-${piece.col}`));
+    const historyKeys = useMemo(
+        () => new Set(
+            historyHighlight
+                ? [`${historyHighlight.from.row}-${historyHighlight.from.col}`, `${historyHighlight.to.row}-${historyHighlight.to.col}`]
+                : []
+        ),
+        [historyHighlight]
+    );
+    const mandatoryKeys = useMemo(
+        () => new Set(mandatoryPieces.map(piece => `${piece.row}-${piece.col}`)),
+        [mandatoryPieces]
+    );
 
     const animatedFrom = lastMove?.from ?? null;
     const animatedTo = lastMove?.to ?? null;

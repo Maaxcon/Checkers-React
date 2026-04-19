@@ -1,8 +1,6 @@
 import './Game.css';
 import Board from './components/Board/Board.tsx';
-import GameInfo from './components/GameInfo/GameInfo.tsx';
-import MoveHistory from './components/MoveHistory/MoveHistory.tsx';
-import ActionButton from './components/ActionButton/ActionButton.tsx';
+import GameSidebar from './components/GameSidebar/GameSidebar.tsx';
 import TimerPanel, { type TimerPanelApi } from './components/TurnTimer/TimerPanel.tsx';
 import WinMessage from './components/WinMessage/WinMessage.tsx';
 import { useCheckers } from './hooks/useCheckers.ts';
@@ -17,7 +15,6 @@ type GameSessionProps = {
 };
 
 function GameSession({ saved, gameId }: GameSessionProps) {
-    const [confirmReset, setConfirmReset] = useState(false);
     const [initialTimer] = useState(() => saved?.timer ?? createInitialTimerState());
     const timerApiRef = useRef<TimerPanelApi | null>(null);
     const handleTimerReady = useCallback((api: TimerPanelApi) => {
@@ -49,7 +46,6 @@ function GameSession({ saved, gameId }: GameSessionProps) {
 
     const handleResetGame = useCallback(() => {
         onReset();
-        setConfirmReset(false);
     }, [onReset]);
 
     const handleUndo = useCallback(() => {
@@ -77,43 +73,18 @@ function GameSession({ saved, gameId }: GameSessionProps) {
                 />
                 <WinMessage winner={winner} onRestart={handleResetGame} />
             </div>
-            <aside className="game-sidebar">
-                <GameInfo
-                    currentTurn={currentPlayer}
-                    winner={winner}
-                    captured={captured}
-                />
-                {apiError ? <div className="game-api-error">{apiError}</div> : null}
-                <div className="game-controls">
-                    {confirmReset ? (
-                        <div className="confirm-reset">
-                            <span className="confirm-reset__text">Restart the game?</span>
-                            <div className="confirm-reset__actions">
-                                <ActionButton text="Yes" onClick={handleResetGame} />
-                                <ActionButton
-                                    text="Cancel"
-                                    onClick={() => setConfirmReset(false)}
-                                />
-                            </div>
-                        </div>
-                    ) : (
-                        <ActionButton
-                            text="Reset game"
-                            onClick={() => setConfirmReset(true)}
-                        />
-                    )}
-                    <ActionButton
-                        text="Undo"
-                        onClick={handleUndo}
-                        disabled={!canUndo}
-                    />
-                </div>
-                <MoveHistory
-                    moveLog={moveLog}
-                    activeIndex={historyIndex}
-                    onSelect={onSelectHistory}
-                />
-            </aside>
+            <GameSidebar
+                currentTurn={currentPlayer}
+                winner={winner}
+                captured={captured}
+                moveLog={moveLog}
+                historyIndex={historyIndex}
+                apiError={apiError}
+                canUndo={canUndo}
+                onUndo={handleUndo}
+                onSelectHistory={onSelectHistory}
+                onResetClick={handleResetGame}
+            />
         </div>
     );
 }

@@ -1,3 +1,4 @@
+import React from 'react';
 import { PLAYERS } from '../../constants/index.ts';
 import type { Player } from '../../constants/index.ts';
 import type { TimerTimes } from '../../types/game.ts';
@@ -43,4 +44,4 @@ function TurnTimer({ times, activePlayer, winner }: TurnTimerProps) {
     );
 }
 
-export default TurnTimer;
+export default React.memo(TurnTimer);

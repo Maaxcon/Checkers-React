@@ -1,3 +1,4 @@
+import React from 'react';
 import './ActionButton.css';
 
 type ActionButtonProps = {
@@ -22,4 +23,4 @@ function ActionButton({
     );
 }
 
-export default ActionButton;
+export default React.memo(ActionButton);
