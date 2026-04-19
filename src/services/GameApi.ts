@@ -1,5 +1,5 @@
 import type {
-    ApiGameState,
+    ApiGameMutationState,
     ApiGameStateWithId,
     ApiMoveHistory,
     ApiMoveRequest
@@ -38,17 +38,17 @@ export const getGame = (gameId: string) =>
 export const move = (gameId: string, body: ApiMoveRequest) =>
     {
         const { fromRow, fromCol, toRow, toCol } = body;
-        return request<ApiGameState>(`/games/${gameId}/move/`, {
+        return request<ApiGameMutationState>(`/games/${gameId}/move/`, {
             method: 'POST',
             body: JSON.stringify({ fromRow, fromCol, toRow, toCol })
         });
     };
 
 export const undo = (gameId: string) =>
-    request<ApiGameState>(`/games/${gameId}/undo/`, { method: 'POST' });
+    request<ApiGameMutationState>(`/games/${gameId}/undo/`, { method: 'POST' });
 
 export const restart = (gameId: string) =>
-    request<ApiGameState>(`/games/${gameId}/restart/`, { method: 'POST' });
+    request<ApiGameMutationState>(`/games/${gameId}/restart/`, { method: 'POST' });
 
 export const getHistory = (gameId: string) =>
     request<ApiMoveHistory>(`/games/${gameId}/moves/`);

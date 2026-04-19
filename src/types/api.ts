@@ -24,6 +24,10 @@ export type ApiGameStateWithId = ApiGameState & {
     id: string;
 };
 
+export type ApiGameMutationState = ApiGameState & {
+    moveLog: ApiMoveLogEntry[];
+};
+
 export type ApiMoveRequest = {
     fromRow: number;
     fromCol: number;

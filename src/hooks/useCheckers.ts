@@ -248,13 +248,12 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
                         toRow: to.row,
                         toCol: to.col
                     });
-                    const history = await getHistory(currentGameId);
 
                     const multiJump = wasCapture && serverState.turn === previousTurn
                         ? { ...to }
                         : null;
 
-                    applyServerSnapshot(serverState, history.moveLog, {
+                    applyServerSnapshot(serverState, serverState.moveLog, {
                         lastMove: { from, to },
                         multiJump
                     });
@@ -309,8 +308,7 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
             let shouldRecover = false;
             try {
                 const serverState = await postRestart(gameId);
-                const history = await getHistory(gameId);
-                applyServerSnapshot(serverState, history.moveLog, { multiJump: null, lastMove: null });
+                applyServerSnapshot(serverState, serverState.moveLog, { multiJump: null, lastMove: null });
                 setApiError(null);
                 clearHighlights();
             } catch (error) {
@@ -333,8 +331,7 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
             let shouldRecover = false;
             try {
                 const serverState = await postUndo(gameId);
-                const history = await getHistory(gameId);
-                applyServerSnapshot(serverState, history.moveLog, { multiJump: null, lastMove: null });
+                applyServerSnapshot(serverState, serverState.moveLog, { multiJump: null, lastMove: null });
                 setApiError(null);
                 clearHighlights();
             } catch (error) {
