@@ -17,7 +17,7 @@ function WinMessage({ winner, onRestart }: WinMessageProps) {
     return (
         <div className="win-message" role="dialog" aria-live="polite">
             <h2 className="win-title">Winner: {getPlayerLabel(winner)}</h2>
-            <ActionButton text="New game" onClick={onRestart} className="btn-restart" />
+            <ActionButton text="Restart game" onClick={onRestart} className="btn-restart" />
         </div>
     );
 }

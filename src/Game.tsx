@@ -124,7 +124,7 @@ function Game() {
     if (isLoading) {
         return (
             <div className="game-container">
-                <div className="game-section">Loading game...</div>
+                <div className="game-section game-status-message">Loading game...</div>
             </div>
         );
     }
@@ -132,7 +132,9 @@ function Game() {
     if (!saved || !gameId) {
         return (
             <div className="game-container">
-                <div className="game-section">Failed to load game: {error}</div>
+                <div className="game-section game-status-message game-status-message--error">
+                    Failed to load game: {error}
+                </div>
             </div>
         );
     }
