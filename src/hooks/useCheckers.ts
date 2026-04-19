@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { GAME_SETTINGS } from '../constants/index.ts';
 import type { Player } from '../constants/index.ts';
-import type { SavedData, TimerState } from '../types/game.ts';
+import type { LastMove, Piece, SavedData, TimerState } from '../types/game.ts';
 import {
     getCapturedCounts,
     selectMandatoryPieces,
@@ -9,6 +9,7 @@ import {
 } from '../logic/selectors.ts';
 import { calculateWinner, getValidMoves } from '../logic/rules.ts';
 import {
+    getGame,
     getHistory,
     move as postMove,
     restart as postRestart,
@@ -17,10 +18,28 @@ import {
 import { saveGame } from '../services/StorageService.ts';
 import { useGameReducer } from './useGameReducer.ts';
 import { useHighlights } from './useHighlights.ts';
-import type { ApiMoveLogEntry } from '../types/api.ts';
+import type { ApiGameState, ApiMoveLogEntry } from '../types/api.ts';
 
 const msToSeconds = (value: number): number =>
     Math.max(0, Math.floor(value / 1000));
+const SERVER_SYNC_INTERVAL_MS = 4000;
+
+const isBoardEqual = (left: (Piece | null)[][], right: (Piece | null)[][]): boolean => {
+    if (left.length !== right.length) return false;
+    for (let row = 0; row < left.length; row += 1) {
+        const leftRow = left[row] ?? [];
+        const rightRow = right[row] ?? [];
+        if (leftRow.length !== rightRow.length) return false;
+        for (let col = 0; col < leftRow.length; col += 1) {
+            const leftCell = leftRow[col];
+            const rightCell = rightRow[col];
+            if (leftCell === null && rightCell === null) continue;
+            if (leftCell === null || rightCell === null) return false;
+            if (leftCell.player !== rightCell.player || leftCell.isKing !== rightCell.isKing) return false;
+        }
+    }
+    return true;
+};
 
 const toMoveLogEntry = (entry: ApiMoveLogEntry) => ({
     notation: entry.notation,
@@ -41,7 +60,6 @@ export const useCheckers = ({ saved, gameId, getTimerSnapshot, syncTimerFromServ
         historyState,
         select,
         clearLastMove,
-        setTimeoutWinner,
         setFromServer
     } = useGameReducer(saved);
 
@@ -88,6 +106,7 @@ export const useCheckers = ({ saved, gameId, getTimerSnapshot, syncTimerFromServ
     );
 
     const moveInFlightRef = useRef(false);
+    const syncInFlightRef = useRef(false);
 
     const interactionStateRef = useRef({
         winner,
@@ -95,8 +114,6 @@ export const useCheckers = ({ saved, gameId, getTimerSnapshot, syncTimerFromServ
         game,
         coreState,
         validMoves,
-        syncTimerFromServer,
-        setFromServer,
         clearHighlights,
         select
     });
@@ -108,8 +125,6 @@ export const useCheckers = ({ saved, gameId, getTimerSnapshot, syncTimerFromServ
             game,
             coreState,
             validMoves,
-            syncTimerFromServer,
-            setFromServer,
             clearHighlights,
             select
         };
@@ -119,11 +134,65 @@ export const useCheckers = ({ saved, gameId, getTimerSnapshot, syncTimerFromServ
         game,
         gameId,
         select,
-        setFromServer,
-        syncTimerFromServer,
         validMoves,
         winner
     ]);
+
+    const applyServerSnapshot = useCallback((
+        serverState: ApiGameState,
+        moveLog: ApiMoveLogEntry[],
+        options?: {
+            lastMove?: LastMove | null;
+            multiJump?: { row: number; col: number } | null;
+        }
+    ) => {
+        setFromServer(
+            {
+                board: serverState.board,
+                turn: serverState.turn,
+                multiJump: options?.multiJump ?? null,
+                timeoutWinner: serverState.winner
+            },
+            moveLog.map(toMoveLogEntry),
+            options?.lastMove ?? null
+        );
+        syncTimerFromServer({
+            light: msToSeconds(serverState.lightTimeRemaining),
+            dark: msToSeconds(serverState.darkTimeRemaining),
+            activePlayer: serverState.winner ? null : serverState.turn
+        });
+    }, [setFromServer, syncTimerFromServer]);
+
+    const syncFromServerNow = useCallback(async (preserveMultiJump: boolean) => {
+        if (moveInFlightRef.current || syncInFlightRef.current) return;
+        syncInFlightRef.current = true;
+        try {
+            const serverState = await getGame(gameId);
+            const currentGame = interactionStateRef.current.game;
+            const boardChanged = !isBoardEqual(currentGame.board, serverState.board);
+            const turnChanged = currentGame.turn !== serverState.turn;
+            const winnerChanged = currentGame.timeoutWinner !== serverState.winner;
+
+            if (!boardChanged && !turnChanged && !winnerChanged) {
+                syncTimerFromServer({
+                    light: msToSeconds(serverState.lightTimeRemaining),
+                    dark: msToSeconds(serverState.darkTimeRemaining),
+                    activePlayer: serverState.winner ? null : serverState.turn
+                });
+                return;
+            }
+
+            const history = await getHistory(gameId);
+            const multiJump = preserveMultiJump && currentGame.multiJump && currentGame.turn === serverState.turn
+                ? { ...currentGame.multiJump }
+                : null;
+            applyServerSnapshot(serverState, history.moveLog, { multiJump });
+        } catch (error) {
+            console.error(error);
+        } finally {
+            syncInFlightRef.current = false;
+        }
+    }, [applyServerSnapshot, gameId, syncTimerFromServer]);
 
     useEffect(() => {
         if (!game.lastMove) return;
@@ -140,8 +209,6 @@ export const useCheckers = ({ saved, gameId, getTimerSnapshot, syncTimerFromServ
             game: currentGame,
             coreState: currentCoreState,
             validMoves: currentValidMoves,
-            syncTimerFromServer: currentSyncTimerFromServer,
-            setFromServer: currentSetFromServer,
             clearHighlights: currentClearHighlights,
             select: currentSelect
         } = interactionStateRef.current;
@@ -178,20 +245,9 @@ export const useCheckers = ({ saved, gameId, getTimerSnapshot, syncTimerFromServ
                         ? { ...to }
                         : null;
 
-                    currentSetFromServer(
-                        {
-                            board: serverState.board,
-                            turn: serverState.turn,
-                            multiJump,
-                            timeoutWinner: serverState.winner
-                        },
-                        history.moveLog.map(toMoveLogEntry),
-                        { from, to }
-                    );
-                    currentSyncTimerFromServer({
-                        light: msToSeconds(serverState.lightTimeRemaining),
-                        dark: msToSeconds(serverState.darkTimeRemaining),
-                        activePlayer: serverState.winner ? null : serverState.turn
+                    applyServerSnapshot(serverState, history.moveLog, {
+                        lastMove: { from, to },
+                        multiJump
                     });
                     currentClearHighlights();
                 } catch (error) {
@@ -229,7 +285,7 @@ export const useCheckers = ({ saved, gameId, getTimerSnapshot, syncTimerFromServ
         if (!locked) {
             currentSelect(null);
         }
-    }, []);
+    }, [applyServerSnapshot]);
 
     useEffect(() => {
         saveGame({
@@ -248,21 +304,7 @@ export const useCheckers = ({ saved, gameId, getTimerSnapshot, syncTimerFromServ
             try {
                 const serverState = await postRestart(gameId);
                 const history = await getHistory(gameId);
-                setFromServer(
-                    {
-                        board: serverState.board,
-                        turn: serverState.turn,
-                        multiJump: null,
-                        timeoutWinner: serverState.winner
-                    },
-                    history.moveLog.map(toMoveLogEntry),
-                    null
-                );
-                syncTimerFromServer({
-                    light: msToSeconds(serverState.lightTimeRemaining),
-                    dark: msToSeconds(serverState.darkTimeRemaining),
-                    activePlayer: serverState.winner ? null : serverState.turn
-                });
+                applyServerSnapshot(serverState, history.moveLog, { multiJump: null, lastMove: null });
                 clearHighlights();
             } catch (error) {
                 console.error(error);
@@ -270,7 +312,7 @@ export const useCheckers = ({ saved, gameId, getTimerSnapshot, syncTimerFromServ
                 moveInFlightRef.current = false;
             }
         })();
-    }, [clearHighlights, gameId, setFromServer, syncTimerFromServer]);
+    }, [applyServerSnapshot, clearHighlights, gameId]);
 
     const handleUndo = useCallback(() => {
         if (moveInFlightRef.current) return;
@@ -280,21 +322,7 @@ export const useCheckers = ({ saved, gameId, getTimerSnapshot, syncTimerFromServ
             try {
                 const serverState = await postUndo(gameId);
                 const history = await getHistory(gameId);
-                setFromServer(
-                    {
-                        board: serverState.board,
-                        turn: serverState.turn,
-                        multiJump: null,
-                        timeoutWinner: serverState.winner
-                    },
-                    history.moveLog.map(toMoveLogEntry),
-                    null
-                );
-                syncTimerFromServer({
-                    light: msToSeconds(serverState.lightTimeRemaining),
-                    dark: msToSeconds(serverState.darkTimeRemaining),
-                    activePlayer: serverState.winner ? null : serverState.turn
-                });
+                applyServerSnapshot(serverState, history.moveLog, { multiJump: null, lastMove: null });
                 clearHighlights();
             } catch (error) {
                 console.error(error);
@@ -302,11 +330,20 @@ export const useCheckers = ({ saved, gameId, getTimerSnapshot, syncTimerFromServ
                 moveInFlightRef.current = false;
             }
         })();
-    }, [clearHighlights, gameId, setFromServer, syncTimerFromServer]);
+    }, [applyServerSnapshot, clearHighlights, gameId]);
 
-    const handleTimeout = useCallback((winner: Player) => {
-        setTimeoutWinner(winner);
-    }, [setTimeoutWinner]);
+    const handleTimeout = useCallback((_winner: Player) => {
+        void syncFromServerNow(true);
+    }, [syncFromServerNow]);
+
+    useEffect(() => {
+        const intervalId = window.setInterval(() => {
+            void syncFromServerNow(true);
+        }, SERVER_SYNC_INTERVAL_MS);
+        return () => {
+            window.clearInterval(intervalId);
+        };
+    }, [syncFromServerNow]);
 
     return {
         gameState: game,
