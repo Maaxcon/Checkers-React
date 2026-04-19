@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { GAME_SETTINGS } from '../constants/index.ts';
 import type { Player } from '../constants/index.ts';
 import type { LastMove, Piece, SavedData, TimerState } from '../types/game.ts';
@@ -22,6 +22,14 @@ import type { ApiGameState, ApiMoveLogEntry } from '../types/api.ts';
 const msToSeconds = (value: number): number =>
     Math.max(0, Math.floor(value / 1000));
 const SERVER_SYNC_INTERVAL_MS = 4000;
+const DEFAULT_API_ERROR_MESSAGE = 'Server request failed';
+
+const getErrorMessage = (error: unknown): string => {
+    if (error instanceof Error && error.message.trim().length > 0) {
+        return error.message;
+    }
+    return DEFAULT_API_ERROR_MESSAGE;
+};
 
 const isBoardEqual = (left: (Piece | null)[][], right: (Piece | null)[][]): boolean => {
     if (left.length !== right.length) return false;
@@ -102,6 +110,7 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
         () => getCapturedCounts(game.board),
         [game.board]
     );
+    const [apiError, setApiError] = useState<string | null>(null);
 
     const moveInFlightRef = useRef(false);
     const syncInFlightRef = useRef(false);
@@ -177,6 +186,7 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
                     dark: msToSeconds(serverState.darkTimeRemaining),
                     activePlayer: serverState.winner ? null : serverState.turn
                 });
+                setApiError(null);
                 return;
             }
 
@@ -185,8 +195,9 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
                 ? { ...currentGame.multiJump }
                 : null;
             applyServerSnapshot(serverState, history.moveLog, { multiJump });
+            setApiError(null);
         } catch (error) {
-            console.error(error);
+            setApiError(getErrorMessage(error));
         } finally {
             syncInFlightRef.current = false;
         }
@@ -230,6 +241,7 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
 
             moveInFlightRef.current = true;
             void (async () => {
+                let shouldRecover = false;
                 try {
                     const serverState = await postMove(currentGameId, {
                         fromRow: from.row,
@@ -247,11 +259,16 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
                         lastMove: { from, to },
                         multiJump
                     });
+                    setApiError(null);
                     currentClearHighlights();
                 } catch (error) {
-                    console.error(error);
+                    setApiError(getErrorMessage(error));
+                    shouldRecover = true;
                 } finally {
                     moveInFlightRef.current = false;
+                    if (shouldRecover) {
+                        void syncFromServerNow(true);
+                    }
                 }
             })();
             return;
@@ -283,43 +300,55 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
         if (!locked) {
             currentSelect(null);
         }
-    }, [applyServerSnapshot]);
+    }, [applyServerSnapshot, syncFromServerNow]);
 
     const handleReset = useCallback(() => {
         if (moveInFlightRef.current) return;
 
         moveInFlightRef.current = true;
         void (async () => {
+            let shouldRecover = false;
             try {
                 const serverState = await postRestart(gameId);
                 const history = await getHistory(gameId);
                 applyServerSnapshot(serverState, history.moveLog, { multiJump: null, lastMove: null });
+                setApiError(null);
                 clearHighlights();
             } catch (error) {
-                console.error(error);
+                setApiError(getErrorMessage(error));
+                shouldRecover = true;
             } finally {
                 moveInFlightRef.current = false;
+                if (shouldRecover) {
+                    void syncFromServerNow(true);
+                }
             }
         })();
-    }, [applyServerSnapshot, clearHighlights, gameId]);
+    }, [applyServerSnapshot, clearHighlights, gameId, syncFromServerNow]);
 
     const handleUndo = useCallback(() => {
         if (moveInFlightRef.current) return;
 
         moveInFlightRef.current = true;
         void (async () => {
+            let shouldRecover = false;
             try {
                 const serverState = await postUndo(gameId);
                 const history = await getHistory(gameId);
                 applyServerSnapshot(serverState, history.moveLog, { multiJump: null, lastMove: null });
+                setApiError(null);
                 clearHighlights();
             } catch (error) {
-                console.error(error);
+                setApiError(getErrorMessage(error));
+                shouldRecover = true;
             } finally {
                 moveInFlightRef.current = false;
+                if (shouldRecover) {
+                    void syncFromServerNow(true);
+                }
             }
         })();
-    }, [applyServerSnapshot, clearHighlights, gameId]);
+    }, [applyServerSnapshot, clearHighlights, gameId, syncFromServerNow]);
 
     const handleTimeout = useCallback((_winner: Player) => {
         void syncFromServerNow(true);
@@ -345,6 +374,7 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
         moveLog: historyState.moveLog,
         currentPlayer: game.turn,
         winner,
+        apiError,
         canUndo: historyState.moveLog.length > 0,
         captured,
         onCellClick: handleCellClick,

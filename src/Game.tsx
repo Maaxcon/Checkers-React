@@ -36,6 +36,7 @@ function GameSession({ saved, gameId }: GameSessionProps) {
         moveLog,
         currentPlayer,
         winner,
+        apiError,
         canUndo,
         captured,
         lastMove,
@@ -82,6 +83,7 @@ function GameSession({ saved, gameId }: GameSessionProps) {
                     winner={winner}
                     captured={captured}
                 />
+                {apiError ? <div className="game-api-error">{apiError}</div> : null}
                 <div className="game-controls">
                     {confirmReset ? (
                         <div className="confirm-reset">
