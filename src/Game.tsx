@@ -8,11 +8,15 @@ import WinMessage from './components/WinMessage/WinMessage.tsx';
 import { useCheckers } from './hooks/useCheckers.ts';
 import { useCallback, useRef, useState } from 'react';
 import { createInitialTimerState } from './logic/timer.ts';
-import { loadGame } from './services/StorageService.ts';
+import { useGameBootstrap } from './hooks/useGameBootstrap.ts';
+import type { SavedData } from './types/game.ts';
 
-function Game() {
+type GameSessionProps = {
+    saved: SavedData;
+};
+
+function GameSession({ saved }: GameSessionProps) {
     const [confirmReset, setConfirmReset] = useState(false);
-    const [saved] = useState(() => loadGame());
     const [initialTimer] = useState(() => saved?.timer ?? createInitialTimerState());
     const timerApiRef = useRef<TimerPanelApi | null>(null);
     const getTimerSnapshot = useCallback(
@@ -113,6 +117,28 @@ function Game() {
             </aside>
         </div>
     );
+}
+
+function Game() {
+    const { saved, error, isLoading } = useGameBootstrap();
+
+    if (isLoading) {
+        return (
+            <div className="game-container">
+                <div className="game-section">Loading game...</div>
+            </div>
+        );
+    }
+
+    if (!saved) {
+        return (
+            <div className="game-container">
+                <div className="game-section">Failed to load game: {error}</div>
+            </div>
+        );
+    }
+
+    return <GameSession saved={saved} />;
 }
 
 export default Game;

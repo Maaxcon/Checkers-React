@@ -2,6 +2,8 @@ import { GAME_SETTINGS } from '../constants/index.ts';
 import type { SavedData } from '../types/game.ts';
 import { isSavedData } from '../logic/storage.ts';
 
+const GAME_ID_STORAGE_KEY = `${GAME_SETTINGS.STORAGE_KEY}_game_id`;
+
 export const saveGame = (data: SavedData): void => {
     localStorage.setItem(GAME_SETTINGS.STORAGE_KEY, JSON.stringify(data));
 };
@@ -24,4 +26,17 @@ export const loadGame = (): SavedData | null => {
 
 export const clearGame = (): void => {
     localStorage.removeItem(GAME_SETTINGS.STORAGE_KEY);
+};
+
+export const saveGameId = (gameId: string): void => {
+    localStorage.setItem(GAME_ID_STORAGE_KEY, gameId);
+};
+
+export const loadGameId = (): string | null => {
+    const gameId = localStorage.getItem(GAME_ID_STORAGE_KEY);
+    return gameId && gameId.trim().length > 0 ? gameId : null;
+};
+
+export const clearGameId = (): void => {
+    localStorage.removeItem(GAME_ID_STORAGE_KEY);
 };
