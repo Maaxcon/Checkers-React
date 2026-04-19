@@ -21,7 +21,6 @@ export const toSavedData = (
         timeoutWinner: game.status === 'FINISHED' ? game.winner : null
     },
     moveLog: moveLog.map(toMoveLogEntry),
-    history: [],
     timer: {
         light: msToSeconds(game.lightTimeRemaining),
         dark: msToSeconds(game.darkTimeRemaining),

@@ -64,15 +64,8 @@ export type GameCoreState = {
     timeoutWinner: Player | null;
 };
 
-export type HistoryEntry = {
-    game: GameCoreState;
-    moveLog: MoveLogEntry[];
-    timer: TimerState;
-};
-
 export type HistoryState = {
     moveLog: MoveLogEntry[];
-    history: HistoryEntry[];
 };
 
 export type GameState = GameCoreState & {
@@ -83,7 +76,6 @@ export type GameState = GameCoreState & {
 export type SavedData = {
     game: GameCoreState;
     moveLog: MoveLogEntry[];
-    history: HistoryEntry[];
     timer: TimerState;
 };
 

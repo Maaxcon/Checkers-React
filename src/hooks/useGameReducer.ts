@@ -6,7 +6,6 @@ import type {
     Position,
     SavedData
 } from '../types/game.ts';
-import type { Player } from '../constants/index.ts';
 import { gameReducer } from '../logic/gameReducer.ts';
 import { historyReducer } from '../logic/historyReducer.ts';
 import { hydrateFromSaved } from '../logic/storage.ts';
@@ -27,10 +26,6 @@ export const useGameReducer = (saved: SavedData | null) => {
         dispatch({ type: 'CLEAR_LAST_MOVE' });
     }, []);
 
-    const setTimeoutWinner = useCallback((winner: Player) => {
-        dispatch({ type: 'SET_TIMEOUT_WINNER', winner });
-    }, []);
-
     const setFromServer = useCallback((nextGame: GameCoreState, moveLog: MoveLogEntry[], lastMove: LastMove | null) => {
         dispatch({
             type: 'APPLY_MOVE',
@@ -46,7 +41,6 @@ export const useGameReducer = (saved: SavedData | null) => {
         historyState,
         select,
         clearLastMove,
-        setTimeoutWinner,
         setFromServer
     };
 };
