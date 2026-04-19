@@ -6,7 +6,6 @@ export type TimerAction =
     | { type: 'TICK' }
     | { type: 'SWITCH'; player: Player }
     | { type: 'SET_ACTIVE'; player: Player | null }
-    | { type: 'RESET' }
     | { type: 'RESTORE'; state: TimerState };
 
 export const createInitialTimerState = (): TimerState => ({
@@ -28,8 +27,6 @@ export const timerReducer = (state: TimerState, action: TimerAction): TimerState
             return { ...state, activePlayer: action.player };
         case 'SET_ACTIVE':
             return { ...state, activePlayer: action.player };
-        case 'RESET':
-            return createInitialTimerState();
         case 'RESTORE':
             return { ...action.state };
         default:

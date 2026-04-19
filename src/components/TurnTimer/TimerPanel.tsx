@@ -6,8 +6,6 @@ import { useTimer } from '../../hooks/useTimer.ts';
 import TurnTimer from './TurnTimer.tsx';
 
 export type TimerPanelApi = {
-    getSnapshot: () => TimerState;
-    reset: () => void;
     restore: (timer: TimerState) => void;
 };
 
@@ -31,9 +29,7 @@ function TimerPanel({
         times,
         switchPlayer,
         setActivePlayer,
-        reset,
-        restore,
-        getSnapshot
+        restore
     } = useTimer({
         initial: initialTimer,
         isRunning: winner === null
@@ -42,8 +38,8 @@ function TimerPanel({
     const timeoutFiredRef = useRef(false);
 
     useEffect(() => {
-        onReady?.({ getSnapshot, reset, restore });
-    }, [getSnapshot, onReady, reset, restore]);
+        onReady?.({ restore });
+    }, [onReady, restore]);
 
     useEffect(() => {
         switchPlayer(currentPlayer);
