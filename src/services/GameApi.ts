@@ -64,14 +64,18 @@ export const createGame = () =>
 export const getGame = (gameId: string) =>
     request<ApiGameStateWithId>(`/games/${gameId}/`);
 
-export const move = (gameId: string, body: ApiMoveRequest) =>
-    {
-        const { fromRow, fromCol, toRow, toCol } = body;
-        return request<ApiGameMutationState>(`/games/${gameId}/move/`, {
-            method: 'POST',
-            body: JSON.stringify({ fromRow, fromCol, toRow, toCol })
-        });
-    };
+export const move = (gameId: string, body: ApiMoveRequest) => {
+    const { fromRow, fromCol, toRow, toCol } = body;
+    return request<ApiGameMutationState>(`/games/${gameId}/move/`, {
+        method: 'POST',
+        body: JSON.stringify({ 
+            from_row: fromRow, 
+            from_col: fromCol, 
+            to_row: toRow, 
+            to_col: toCol 
+        })
+    });
+};
 
 export const undo = (gameId: string) =>
     request<ApiGameMutationState>(`/games/${gameId}/undo/`, { method: 'POST' });
