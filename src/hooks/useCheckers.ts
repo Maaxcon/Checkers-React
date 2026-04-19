@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { GAME_SETTINGS } from '../constants/index.ts';
-import type { Player } from '../constants/index.ts';
 import type { LastMove, Piece, SavedData, TimerState } from '../types/game.ts';
 import {
     getCapturedCounts,
@@ -350,7 +349,7 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
         })();
     }, [applyServerSnapshot, clearHighlights, gameId, syncFromServerNow]);
 
-    const handleTimeout = useCallback((_winner: Player) => {
+    const handleTimeout = useCallback(() => {
         void syncFromServerNow(true);
     }, [syncFromServerNow]);
 
