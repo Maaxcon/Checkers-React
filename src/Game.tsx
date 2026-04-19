@@ -52,15 +52,11 @@ function GameSession({ saved, gameId }: GameSessionProps) {
 
     const handleResetGame = useCallback(() => {
         onReset();
-        timerApiRef.current?.reset();
         setConfirmReset(false);
     }, [onReset]);
 
     const handleUndo = useCallback(() => {
-        const lastTimer = onUndo();
-        if (lastTimer) {
-            timerApiRef.current?.restore(lastTimer);
-        }
+        onUndo();
     }, [onUndo]);
 
     return (

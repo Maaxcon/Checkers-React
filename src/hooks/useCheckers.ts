@@ -8,7 +8,12 @@ import {
     selectValidMoves
 } from '../logic/selectors.ts';
 import { calculateWinner, getValidMoves } from '../logic/rules.ts';
-import { getHistory, move as postMove } from '../services/GameApi.ts';
+import {
+    getHistory,
+    move as postMove,
+    restart as postRestart,
+    undo as postUndo
+} from '../services/GameApi.ts';
 import { saveGame } from '../services/StorageService.ts';
 import { useGameReducer } from './useGameReducer.ts';
 import { useHighlights } from './useHighlights.ts';
@@ -35,8 +40,6 @@ export const useCheckers = ({ saved, gameId, getTimerSnapshot, syncTimerFromServ
         game,
         historyState,
         select,
-        undo,
-        reset,
         clearLastMove,
         setTimeoutWinner,
         setFromServer
@@ -238,16 +241,68 @@ export const useCheckers = ({ saved, gameId, getTimerSnapshot, syncTimerFromServ
     }, [coreState, getTimerSnapshot, historyState]);
 
     const handleReset = useCallback(() => {
-        reset();
-        clearHighlights();
-    }, [clearHighlights, reset]);
+        if (moveInFlightRef.current) return;
 
-    const handleUndo = useCallback((): TimerState | null => {
-        const lastTimer = undo();
-        if (!lastTimer) return null;
-        clearHighlights();
-        return lastTimer ?? null;
-    }, [clearHighlights, undo]);
+        moveInFlightRef.current = true;
+        void (async () => {
+            try {
+                const serverState = await postRestart(gameId);
+                const history = await getHistory(gameId);
+                setFromServer(
+                    {
+                        board: serverState.board,
+                        turn: serverState.turn,
+                        multiJump: null,
+                        timeoutWinner: serverState.winner
+                    },
+                    history.moveLog.map(toMoveLogEntry),
+                    null
+                );
+                syncTimerFromServer({
+                    light: msToSeconds(serverState.lightTimeRemaining),
+                    dark: msToSeconds(serverState.darkTimeRemaining),
+                    activePlayer: serverState.winner ? null : serverState.turn
+                });
+                clearHighlights();
+            } catch (error) {
+                console.error(error);
+            } finally {
+                moveInFlightRef.current = false;
+            }
+        })();
+    }, [clearHighlights, gameId, setFromServer, syncTimerFromServer]);
+
+    const handleUndo = useCallback(() => {
+        if (moveInFlightRef.current) return;
+
+        moveInFlightRef.current = true;
+        void (async () => {
+            try {
+                const serverState = await postUndo(gameId);
+                const history = await getHistory(gameId);
+                setFromServer(
+                    {
+                        board: serverState.board,
+                        turn: serverState.turn,
+                        multiJump: null,
+                        timeoutWinner: serverState.winner
+                    },
+                    history.moveLog.map(toMoveLogEntry),
+                    null
+                );
+                syncTimerFromServer({
+                    light: msToSeconds(serverState.lightTimeRemaining),
+                    dark: msToSeconds(serverState.darkTimeRemaining),
+                    activePlayer: serverState.winner ? null : serverState.turn
+                });
+                clearHighlights();
+            } catch (error) {
+                console.error(error);
+            } finally {
+                moveInFlightRef.current = false;
+            }
+        })();
+    }, [clearHighlights, gameId, setFromServer, syncTimerFromServer]);
 
     const handleTimeout = useCallback((winner: Player) => {
         setTimeoutWinner(winner);
@@ -264,7 +319,7 @@ export const useCheckers = ({ saved, gameId, getTimerSnapshot, syncTimerFromServ
         moveLog: historyState.moveLog,
         currentPlayer: game.turn,
         winner,
-        canUndo: historyState.history.length > 0,
+        canUndo: historyState.moveLog.length > 0,
         captured,
         onCellClick: handleCellClick,
         onReset: handleReset,
