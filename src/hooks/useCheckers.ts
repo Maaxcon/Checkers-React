@@ -16,7 +16,7 @@ import {
 } from '../services/GameApi.ts';
 import { useGameReducer } from './useGameReducer.ts';
 import { useHighlights } from './useHighlights.ts';
-import type { ApiGameState, ApiMoveLogEntry } from '../types/api.ts';
+import type { ApiGameMutationState, ApiGameState, ApiMoveLogEntry } from '../types/api.ts';
 
 const msToSeconds = (value: number): number =>
     Math.max(0, Math.floor(value / 1000));
@@ -292,14 +292,14 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
         }
     }, [applyServerSnapshot, syncFromServerNow]);
 
-    const handleReset = useCallback(() => {
+    const runMutation = useCallback((apiCall: (currentGameId: string) => Promise<ApiGameMutationState>) => {
         if (moveInFlightRef.current) return;
 
         moveInFlightRef.current = true;
         void (async () => {
             let shouldRecover = false;
             try {
-                const serverState = await postRestart(gameId);
+                const serverState = await apiCall(gameId);
                 applyServerSnapshot(serverState, serverState.moveLog, { multiJump: null, lastMove: null });
                 setApiError(null);
                 clearHighlights();
@@ -314,29 +314,14 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
             }
         })();
     }, [applyServerSnapshot, clearHighlights, gameId, syncFromServerNow]);
+
+    const handleReset = useCallback(() => {
+        runMutation(postRestart);
+    }, [runMutation]);
 
     const handleUndo = useCallback(() => {
-        if (moveInFlightRef.current) return;
-
-        moveInFlightRef.current = true;
-        void (async () => {
-            let shouldRecover = false;
-            try {
-                const serverState = await postUndo(gameId);
-                applyServerSnapshot(serverState, serverState.moveLog, { multiJump: null, lastMove: null });
-                setApiError(null);
-                clearHighlights();
-            } catch (error) {
-                setApiError(getErrorMessage(error));
-                shouldRecover = true;
-            } finally {
-                moveInFlightRef.current = false;
-                if (shouldRecover) {
-                    void syncFromServerNow(true);
-                }
-            }
-        })();
-    }, [applyServerSnapshot, clearHighlights, gameId, syncFromServerNow]);
+        runMutation(postUndo);
+    }, [runMutation]);
 
     const handleTimeout = useCallback(() => {
         void syncFromServerNow(true);
