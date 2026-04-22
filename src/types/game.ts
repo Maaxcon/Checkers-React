@@ -61,7 +61,7 @@ export type GameCoreState = {
     board: Board;
     turn: Player;
     multiJump: Position | null;
-    timeoutWinner: Player | null;
+    serverWinner: Player | null;
 };
 
 export type HistoryState = {

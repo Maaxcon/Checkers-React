@@ -6,7 +6,7 @@ export const createInitialGameState = (): GameState => ({
     board: createInitialBoard(),
     turn: PLAYERS.LIGHT,
     multiJump: null,
-    timeoutWinner: null,
+    serverWinner: null,
     selected: null,
     lastMove: null
 });

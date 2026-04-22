@@ -6,7 +6,7 @@ import {
     selectMandatoryPieces,
     selectValidMoves
 } from '../logic/selectors.ts';
-import { calculateWinner, getValidMoves } from '../logic/rules.ts';
+import { getValidMoves } from '../logic/rules.ts';
 import {
     getGame,
     getHistory,
@@ -80,20 +80,12 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
             board: game.board,
             turn: game.turn,
             multiJump: game.multiJump,
-            timeoutWinner: game.timeoutWinner
+            serverWinner: game.serverWinner
         }),
-        [game.board, game.multiJump, game.timeoutWinner, game.turn]
+        [game.board, game.multiJump, game.serverWinner, game.turn]
     );
 
-    const boardWinner = useMemo(
-        () => calculateWinner(coreState),
-        [coreState]
-    );
-
-    const winner = useMemo(
-        () => game.timeoutWinner ?? boardWinner,
-        [boardWinner, game.timeoutWinner]
-    );
+    const winner = game.serverWinner;
 
     const validMoves = useMemo(
         () => selectValidMoves(coreState, game.selected, winner),
@@ -157,7 +149,7 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
                 board: serverState.board,
                 turn: serverState.turn,
                 multiJump: options?.multiJump ?? null,
-                timeoutWinner: serverState.winner
+                serverWinner: serverState.winner
             },
             moveLog.map(toMoveLogEntry),
             options?.lastMove ?? null
@@ -177,7 +169,7 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
             const currentGame = interactionStateRef.current.game;
             const boardChanged = !isBoardEqual(currentGame.board, serverState.board);
             const turnChanged = currentGame.turn !== serverState.turn;
-            const winnerChanged = currentGame.timeoutWinner !== serverState.winner;
+            const winnerChanged = currentGame.serverWinner !== serverState.winner;
 
             if (!boardChanged && !turnChanged && !winnerChanged) {
                 syncTimerFromServer({

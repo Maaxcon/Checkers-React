@@ -18,12 +18,12 @@ export const toSavedData = (
         board: game.board,
         turn: game.turn,
         multiJump: null,
-        timeoutWinner: game.status === 'FINISHED' ? game.winner : null
+        serverWinner: game.winner
     },
     moveLog: moveLog.map(toMoveLogEntry),
     timer: {
         light: msToSeconds(game.lightTimeRemaining),
         dark: msToSeconds(game.darkTimeRemaining),
-        activePlayer: game.status === 'FINISHED' ? null : game.turn
+        activePlayer: game.winner ? null : game.turn
     }
 });
