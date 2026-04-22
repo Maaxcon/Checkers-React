@@ -44,14 +44,6 @@ function GameSession({ saved, gameId }: GameSessionProps) {
         onSelectHistory
     } = useCheckers({ saved, gameId, syncTimerFromServer });
 
-    const handleResetGame = useCallback(() => {
-        onReset();
-    }, [onReset]);
-
-    const handleUndo = useCallback(() => {
-        onUndo();
-    }, [onUndo]);
-
     return (
         <div className="game-container">
             <div className="game-section">
@@ -71,7 +63,7 @@ function GameSession({ saved, gameId }: GameSessionProps) {
                     onCellClick={onCellClick}
                     lastMove={lastMove}
                 />
-                <WinMessage winner={winner} onRestart={handleResetGame} />
+                <WinMessage winner={winner} onRestart={onReset} />
             </div>
             <GameSidebar
                 currentTurn={currentPlayer}
@@ -81,9 +73,9 @@ function GameSession({ saved, gameId }: GameSessionProps) {
                 historyIndex={historyIndex}
                 apiError={apiError}
                 canUndo={canUndo}
-                onUndo={handleUndo}
+                onUndo={onUndo}
                 onSelectHistory={onSelectHistory}
-                onResetClick={handleResetGame}
+                onResetClick={onReset}
             />
         </div>
     );
