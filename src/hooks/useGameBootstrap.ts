@@ -12,6 +12,8 @@ type GameBootstrapState = {
     isLoading: boolean;
 };
 
+type BootstrapPayload = { saved: SavedData; gameId: string };
+
 const bootstrapSavedData = async (): Promise<{ saved: SavedData; gameId: string }> => {
     let gameId = loadGameId();
     let gameState: ApiGameStateWithId | null = null;
@@ -41,6 +43,17 @@ const bootstrapSavedData = async (): Promise<{ saved: SavedData; gameId: string 
     };
 };
 
+let bootstrapInFlight: Promise<BootstrapPayload> | null = null;
+
+const getBootstrapData = (): Promise<BootstrapPayload> => {
+    if (!bootstrapInFlight) {
+        bootstrapInFlight = bootstrapSavedData().finally(() => {
+            bootstrapInFlight = null;
+        });
+    }
+    return bootstrapInFlight;
+};
+
 export const useGameBootstrap = (): GameBootstrapState => {
     const [saved, setSaved] = useState<SavedData | null>(null);
     const [gameId, setGameId] = useState<string | null>(null);
@@ -52,7 +65,7 @@ export const useGameBootstrap = (): GameBootstrapState => {
 
         const runBootstrap = async () => {
             try {
-                const initial = await bootstrapSavedData();
+                const initial = await getBootstrapData();
                 if (cancelled) return;
                 setSaved(initial.saved);
                 setGameId(initial.gameId);
