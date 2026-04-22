@@ -1,4 +1,5 @@
 import type {
+    ApiAIMoveRequest,
     ApiGameMutationState,
     ApiGameStateWithId,
     ApiMoveHistory,
@@ -82,6 +83,12 @@ export const undo = (gameId: string) =>
 
 export const restart = (gameId: string) =>
     request<ApiGameMutationState>(`/games/${gameId}/restart/`, { method: 'POST' });
+
+export const aiMove = (gameId: string, body?: ApiAIMoveRequest) =>
+    request<ApiGameMutationState>(`/games/${gameId}/ai-move/`, {
+        method: 'POST',
+        body: JSON.stringify(body ?? {})
+    });
 
 export const getHistory = (gameId: string) =>
     request<ApiMoveHistory>(`/games/${gameId}/moves/`);

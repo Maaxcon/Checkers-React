@@ -35,6 +35,10 @@ export type ApiMoveRequest = {
     toCol: number;
 };
 
+export type ApiAIMoveRequest = {
+    difficulty?: 'easy' | 'medium' | 'hard';
+};
+
 export type ApiMoveLogEntry = {
     notation: string;
     from: ApiPosition;
