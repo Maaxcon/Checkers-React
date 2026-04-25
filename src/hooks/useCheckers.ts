@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { GAME_SETTINGS, PLAYERS } from '../constants/index.ts';
+import { GAME_SETTINGS } from '../constants/index.ts';
 import type { LastMove, Piece, SavedData, TimerState } from '../types/game.ts';
 import {
     getCapturedCounts,
@@ -10,7 +10,6 @@ import { getValidMoves } from '../logic/rules.ts';
 import {
     getGame,
     getHistory,
-    aiMove as postAIMove,
     move as postMove,
     restart as postRestart,
     undo as postUndo
@@ -23,16 +22,6 @@ const msToSeconds = (value: number): number =>
     Math.max(0, Math.floor(value / 1000));
 const SERVER_SYNC_INTERVAL_MS = 4000;
 const DEFAULT_API_ERROR_MESSAGE = 'Server request failed';
-const AI_PLAYER = PLAYERS.DARK;
-
-const getLastMoveFromMoveLog = (moveLog: ApiMoveLogEntry[]): LastMove | null => {
-    const lastEntry = moveLog.at(-1);
-    if (!lastEntry) return null;
-    return {
-        from: { ...lastEntry.from },
-        to: { ...lastEntry.to }
-    };
-};
 
 const getErrorMessage = (error: unknown): string => {
     if (error instanceof Error && error.message.trim().length > 0) {
@@ -260,20 +249,6 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
                         lastMove: { from, to },
                         multiJump
                     });
-
-                    const shouldTriggerAIMove =
-                        previousTurn === PLAYERS.LIGHT
-                        && !serverState.winner
-                        && serverState.turn === AI_PLAYER;
-
-                    if (shouldTriggerAIMove) {
-                        const aiState = await postAIMove(currentGameId, { difficulty: 'medium' });
-                        applyServerSnapshot(aiState, aiState.moveLog, {
-                            lastMove: getLastMoveFromMoveLog(aiState.moveLog),
-                            multiJump: null
-                        });
-                    }
-
                     setApiError(null);
                     currentClearHighlights();
                 } catch (error) {
