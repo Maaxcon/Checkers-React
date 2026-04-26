@@ -25,6 +25,7 @@ const msToSeconds = (value: number): number =>
 const SERVER_SYNC_INTERVAL_MS = 4000;
 const AI_POLL_INTERVAL_MS = 1200;
 const AI_POLL_TIMEOUT_MS = 30000;
+const AI_POLL_MAX_CONSECUTIVE_ERRORS = 3;
 const AI_MOVE_REVEAL_DELAY_MS = 450;
 const AI_MOVE_SETTLE_DELAY_MS = GAME_SETTINGS.ANIMATION_DURATION_MS;
 const AI_PLAYER = PLAYERS.DARK;
@@ -212,20 +213,31 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
 
         const startedAt = Date.now();
         let latestStatus = enqueuePayload.status;
+        let consecutivePollingErrors = 0;
 
         while (Date.now() - startedAt < AI_POLL_TIMEOUT_MS) {
-            const statusPayload = await getAiMoveStatus(currentGameId, enqueuePayload.jobId);
-            latestStatus = statusPayload.status;
+            try {
+                const statusPayload = await getAiMoveStatus(currentGameId, enqueuePayload.jobId);
+                consecutivePollingErrors = 0;
+                latestStatus = statusPayload.status;
 
-            if (statusPayload.isFailed) {
-                throw new Error(statusPayload.error ?? `AI job failed (${latestStatus})`);
-            }
-
-            if (statusPayload.isFinished) {
-                if (statusPayload.result) {
-                    return statusPayload.result;
+                if (statusPayload.isFailed) {
+                    throw new Error(statusPayload.error ?? `AI job failed (${latestStatus})`);
                 }
-                throw new Error('AI job finished without result');
+
+                if (statusPayload.isFinished) {
+                    if (statusPayload.result) {
+                        return statusPayload.result;
+                    }
+                    throw new Error('AI job finished without result');
+                }
+            } catch (error) {
+                consecutivePollingErrors += 1;
+                if (consecutivePollingErrors > AI_POLL_MAX_CONSECUTIVE_ERRORS) {
+                    throw new Error(
+                        `Lost connection while waiting for AI move (${getErrorMessage(error)})`
+                    );
+                }
             }
 
             await waitFor(AI_POLL_INTERVAL_MS);
