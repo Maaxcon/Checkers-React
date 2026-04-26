@@ -15,6 +15,14 @@ const API_BASE_URL = rawEnv?.VITE_API_BASE_URL ?? DEFAULT_API_BASE_URL;
 const isRecord = (value: unknown): value is Record<string, unknown> =>
     typeof value === 'object' && value !== null;
 
+const getCookie = (name: string): string | null => {
+    const cookieValue = document.cookie
+        .split(';')
+        .map((cookie) => cookie.trim())
+        .find((cookie) => cookie.startsWith(`${name}=`));
+    return cookieValue ? decodeURIComponent(cookieValue.split('=')[1]) : null;
+};
+
 const parsePayload = async (response: Response): Promise<unknown> => {
     const text = await response.text();
     if (!text) return null;
@@ -34,12 +42,19 @@ const parsePayload = async (response: Response): Promise<unknown> => {
 };
 
 const request = async <T>(path: string, options?: RequestInit): Promise<T> => {
+    const method = options?.method?.toUpperCase() ?? 'GET';
+    const csrfToken = getCookie('csrftoken');
+    const headers = new Headers(options?.headers as HeadersInit);
+
+    headers.set('Content-Type', 'application/json');
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method) && csrfToken) {
+        headers.set('X-CSRFToken', csrfToken);
+    }
+
     const response = await fetch(`${API_BASE_URL}${path}`, {
-        headers: {
-            'Content-Type': 'application/json',
-            ...options?.headers
-        },
-        ...options
+        ...options,
+        headers,
+        credentials: 'include',
     });
 
     const payload = await parsePayload(response);
