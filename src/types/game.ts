@@ -56,6 +56,7 @@ export type TimerState = {
 };
 
 export type TimerTimes = Record<Player, string>;
+export type GameMode = 'local' | 'vs-ai';
 
 export type GameCoreState = {
     board: Board;

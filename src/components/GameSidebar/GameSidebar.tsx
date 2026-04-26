@@ -1,6 +1,6 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import type { Player } from '../../constants/index.ts';
-import type { CapturedCounts, MoveLogEntry } from '../../types/game.ts';
+import type { CapturedCounts, GameMode, MoveLogEntry } from '../../types/game.ts';
 import GameInfo from '../GameInfo/GameInfo.tsx';
 import MoveHistory from '../MoveHistory/MoveHistory.tsx';
 import ActionButton from '../ActionButton/ActionButton.tsx';
@@ -12,7 +12,10 @@ type GameSidebarProps = {
     moveLog: MoveLogEntry[];
     historyIndex: number | null;
     apiError: string | null;
+    gameMode: GameMode;
+    isAiThinking: boolean;
     canUndo: boolean;
+    onSetGameMode: (mode: GameMode) => void;
     onUndo: () => void;
     onSelectHistory: (index: number | null) => void;
     onResetClick: () => void;
@@ -25,7 +28,10 @@ function GameSidebar({
     moveLog,
     historyIndex,
     apiError,
+    gameMode,
+    isAiThinking,
     canUndo,
+    onSetGameMode,
     onUndo,
     onSelectHistory,
     onResetClick
@@ -59,15 +65,31 @@ function GameSidebar({
                 captured={gameInfoData.captured}
             />
             {apiError ? <div className="game-api-error">{apiError}</div> : null}
+            <div className="game-mode-toggle">
+                <ActionButton
+                    text="Local"
+                    onClick={() => onSetGameMode('local')}
+                    disabled={isAiThinking}
+                    className={gameMode === 'local' ? 'btn mode-button mode-button--active' : 'btn mode-button'}
+                />
+                <ActionButton
+                    text="Vs AI"
+                    onClick={() => onSetGameMode('vs-ai')}
+                    disabled={isAiThinking}
+                    className={gameMode === 'vs-ai' ? 'btn mode-button mode-button--active' : 'btn mode-button'}
+                />
+            </div>
+            {isAiThinking ? <div className="game-ai-status">AI is thinking...</div> : null}
             <div className="game-controls">
                 {confirmReset ? (
                     <div className="confirm-reset">
                         <span className="confirm-reset__text">Restart the game?</span>
                         <div className="confirm-reset__actions">
-                            <ActionButton text="Yes" onClick={handleReset} />
+                            <ActionButton text="Yes" onClick={handleReset} disabled={isAiThinking} />
                             <ActionButton
                                 text="Cancel"
                                 onClick={() => setConfirmReset(false)}
+                                disabled={isAiThinking}
                             />
                         </div>
                     </div>
@@ -76,6 +98,7 @@ function GameSidebar({
                         <ActionButton
                             text="Reset game"
                             onClick={handleResetRequest}
+                            disabled={isAiThinking}
                         />
                         <ActionButton
                             text="Undo"

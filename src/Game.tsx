@@ -29,6 +29,8 @@ function GameSession({ saved, gameId }: GameSessionProps) {
         validMoves,
         historyHighlight,
         historyIndex,
+        gameMode,
+        isAiThinking,
         mandatoryPieces,
         moveLog,
         currentPlayer,
@@ -37,6 +39,7 @@ function GameSession({ saved, gameId }: GameSessionProps) {
         canUndo,
         captured,
         lastMove,
+        onSetGameMode,
         onCellClick,
         onReset,
         onUndo,
@@ -72,7 +75,10 @@ function GameSession({ saved, gameId }: GameSessionProps) {
                 moveLog={moveLog}
                 historyIndex={historyIndex}
                 apiError={apiError}
+                gameMode={gameMode}
+                isAiThinking={isAiThinking}
                 canUndo={canUndo}
+                onSetGameMode={onSetGameMode}
                 onUndo={onUndo}
                 onSelectHistory={onSelectHistory}
                 onResetClick={onReset}

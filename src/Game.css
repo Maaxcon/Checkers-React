@@ -66,6 +66,29 @@ body {
     font-weight: 600;
 }
 
+.game-mode-toggle {
+    display: flex;
+    gap: 10px;
+}
+
+.mode-button {
+    margin-bottom: 0;
+}
+
+.mode-button--active {
+    background-color: var(--color-accent);
+    color: var(--color-text-btn);
+}
+
+.game-ai-status {
+    padding: 10px;
+    border: 1px solid var(--color-panel-border);
+    border-radius: var(--radius-btn);
+    background: var(--color-panel-bg);
+    color: var(--color-text-main);
+    font-weight: 600;
+}
+
 .confirm-reset {
     display: flex;
     flex-direction: column;

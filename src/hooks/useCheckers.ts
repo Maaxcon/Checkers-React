@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { GAME_SETTINGS } from '../constants/index.ts';
-import type { LastMove, Piece, SavedData, TimerState } from '../types/game.ts';
+import { GAME_SETTINGS, PLAYERS } from '../constants/index.ts';
+import type { GameMode, LastMove, Piece, SavedData, TimerState } from '../types/game.ts';
 import {
     getCapturedCounts,
     selectMandatoryPieces,
@@ -8,7 +8,9 @@ import {
 } from '../logic/selectors.ts';
 import { getValidMoves } from '../logic/rules.ts';
 import {
+    aiMove as requestAiMove,
     getGame,
+    getAiMoveStatus,
     getHistory,
     move as postMove,
     restart as postRestart,
@@ -21,6 +23,10 @@ import type { ApiGameMutationState, ApiGameState, ApiMoveLogEntry } from '../typ
 const msToSeconds = (value: number): number =>
     Math.max(0, Math.floor(value / 1000));
 const SERVER_SYNC_INTERVAL_MS = 4000;
+const AI_POLL_INTERVAL_MS = 1200;
+const AI_POLL_TIMEOUT_MS = 30000;
+const AI_PLAYER = PLAYERS.DARK;
+const DEFAULT_AI_DIFFICULTY = 'medium' as const;
 const DEFAULT_API_ERROR_MESSAGE = 'Server request failed';
 
 const getErrorMessage = (error: unknown): string => {
@@ -28,6 +34,18 @@ const getErrorMessage = (error: unknown): string => {
         return error.message;
     }
     return DEFAULT_API_ERROR_MESSAGE;
+};
+
+const waitFor = (ms: number): Promise<void> =>
+    new Promise(resolve => {
+        window.setTimeout(resolve, ms);
+    });
+
+const createAiRequestId = (): string => {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+        return `ai-${crypto.randomUUID()}`;
+    }
+    return `ai-${Date.now()}-${Math.random().toString(16).slice(2)}`;
 };
 
 const isBoardEqual = (left: (Piece | null)[][], right: (Piece | null)[][]): boolean => {
@@ -101,15 +119,19 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
         () => getCapturedCounts(game.board),
         [game.board]
     );
+    const [gameMode, setGameMode] = useState<GameMode>('local');
     const [apiError, setApiError] = useState<string | null>(null);
+    const [isAiThinking, setIsAiThinking] = useState(false);
 
     const moveInFlightRef = useRef(false);
+    const aiInFlightRef = useRef(false);
     const syncInFlightRef = useRef(false);
 
     const interactionStateRef = useRef({
         winner,
         gameId,
         game,
+        gameMode,
         coreState,
         validMoves,
         clearHighlights,
@@ -121,6 +143,7 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
             winner,
             gameId,
             game,
+            gameMode,
             coreState,
             validMoves,
             clearHighlights,
@@ -130,6 +153,7 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
         clearHighlights,
         coreState,
         game,
+        gameMode,
         gameId,
         select,
         validMoves,
@@ -161,8 +185,65 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
         });
     }, [setFromServer, syncTimerFromServer]);
 
+    const shouldAiPlayTurn = useCallback((turn: number, serverWinner: number | null) => {
+        return gameMode === 'vs-ai' && serverWinner === null && turn === AI_PLAYER;
+    }, [gameMode]);
+
+    const requestAiMoveResult = useCallback(async (currentGameId: string): Promise<ApiGameMutationState> => {
+        const enqueuePayload = await requestAiMove(currentGameId, {
+            aiRequestId: createAiRequestId(),
+            difficulty: DEFAULT_AI_DIFFICULTY
+        });
+
+        const startedAt = Date.now();
+        let latestStatus = enqueuePayload.status;
+
+        while (Date.now() - startedAt < AI_POLL_TIMEOUT_MS) {
+            const statusPayload = await getAiMoveStatus(currentGameId, enqueuePayload.jobId);
+            latestStatus = statusPayload.status;
+
+            if (statusPayload.isFailed) {
+                throw new Error(statusPayload.error ?? `AI job failed (${latestStatus})`);
+            }
+
+            if (statusPayload.isFinished) {
+                if (statusPayload.result) {
+                    return statusPayload.result;
+                }
+                throw new Error('AI job finished without result');
+            }
+
+            await waitFor(AI_POLL_INTERVAL_MS);
+        }
+
+        throw new Error(`AI job timeout (${latestStatus})`);
+    }, []);
+
+    const runAiTurn = useCallback(async (currentGameId: string) => {
+        if (aiInFlightRef.current) return;
+
+        aiInFlightRef.current = true;
+        setIsAiThinking(true);
+
+        try {
+            let keepGoing = true;
+            while (keepGoing) {
+                const serverState = await requestAiMoveResult(currentGameId);
+                applyServerSnapshot(serverState, serverState.moveLog, { multiJump: null, lastMove: null });
+                clearHighlights();
+                keepGoing = shouldAiPlayTurn(serverState.turn, serverState.winner);
+            }
+            setApiError(null);
+        } catch (error) {
+            setApiError(getErrorMessage(error));
+        } finally {
+            aiInFlightRef.current = false;
+            setIsAiThinking(false);
+        }
+    }, [applyServerSnapshot, clearHighlights, requestAiMoveResult, shouldAiPlayTurn]);
+
     const syncFromServerNow = useCallback(async (preserveMultiJump: boolean) => {
-        if (moveInFlightRef.current || syncInFlightRef.current) return;
+        if (moveInFlightRef.current || aiInFlightRef.current || syncInFlightRef.current) return;
         syncInFlightRef.current = true;
         try {
             const serverState = await getGame(gameId);
@@ -207,6 +288,7 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
             winner: currentWinner,
             gameId: currentGameId,
             game: currentGame,
+            gameMode: currentGameMode,
             coreState: currentCoreState,
             validMoves: currentValidMoves,
             clearHighlights: currentClearHighlights,
@@ -214,12 +296,13 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
         } = interactionStateRef.current;
 
         if (currentWinner) return;
+        if (currentGameMode === 'vs-ai' && currentGame.turn === AI_PLAYER) return;
 
         const locked = currentGame.multiJump;
         const isMoveTarget = currentValidMoves.some(move => move.row === row && move.col === col);
 
         if (isMoveTarget && currentGame.selected) {
-            if (moveInFlightRef.current) return;
+            if (moveInFlightRef.current || aiInFlightRef.current) return;
 
             const selected = { ...currentGame.selected };
             const move = currentValidMoves.find(item => item.row === row && item.col === col);
@@ -251,6 +334,9 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
                     });
                     setApiError(null);
                     currentClearHighlights();
+                    if (shouldAiPlayTurn(serverState.turn, serverState.winner)) {
+                        await runAiTurn(currentGameId);
+                    }
                 } catch (error) {
                     setApiError(getErrorMessage(error));
                     shouldRecover = true;
@@ -290,10 +376,10 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
         if (!locked) {
             currentSelect(null);
         }
-    }, [applyServerSnapshot, syncFromServerNow]);
+    }, [applyServerSnapshot, runAiTurn, shouldAiPlayTurn, syncFromServerNow]);
 
     const runMutation = useCallback((apiCall: (currentGameId: string) => Promise<ApiGameMutationState>) => {
-        if (moveInFlightRef.current) return;
+        if (moveInFlightRef.current || aiInFlightRef.current) return;
 
         moveInFlightRef.current = true;
         void (async () => {
@@ -323,9 +409,18 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
         runMutation(postUndo);
     }, [runMutation]);
 
+    const handleSetGameMode = useCallback((mode: GameMode) => {
+        setGameMode(mode);
+    }, []);
+
     const handleTimeout = useCallback(() => {
         void syncFromServerNow(true);
     }, [syncFromServerNow]);
+
+    useEffect(() => {
+        if (!shouldAiPlayTurn(game.turn, game.serverWinner)) return;
+        void runAiTurn(gameId);
+    }, [game.serverWinner, game.turn, gameId, runAiTurn, shouldAiPlayTurn]);
 
     useEffect(() => {
         const intervalId = window.setInterval(() => {
@@ -345,11 +440,14 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
         historyIndex,
         mandatoryPieces,
         moveLog: historyState.moveLog,
+        gameMode,
+        isAiThinking,
         currentPlayer: game.turn,
         winner,
         apiError,
-        canUndo: historyState.moveLog.length > 0,
+        canUndo: historyState.moveLog.length > 0 && !isAiThinking,
         captured,
+        onSetGameMode: handleSetGameMode,
         onCellClick: handleCellClick,
         onReset: handleReset,
         onUndo: handleUndo,
