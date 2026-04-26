@@ -144,6 +144,7 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
         gameId,
         game,
         gameMode,
+        isAiThinking,
         coreState,
         validMoves,
         clearHighlights,
@@ -156,6 +157,7 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
             gameId,
             game,
             gameMode,
+            isAiThinking,
             coreState,
             validMoves,
             clearHighlights,
@@ -167,6 +169,7 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
         game,
         gameMode,
         gameId,
+        isAiThinking,
         select,
         validMoves,
         winner
@@ -308,13 +311,14 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
             gameId: currentGameId,
             game: currentGame,
             gameMode: currentGameMode,
+            isAiThinking: currentIsAiThinking,
             coreState: currentCoreState,
             validMoves: currentValidMoves,
             clearHighlights: currentClearHighlights,
             select: currentSelect
         } = interactionStateRef.current;
 
-        if (currentWinner) return;
+        if (currentWinner || currentIsAiThinking || aiInFlightRef.current) return;
         if (currentGameMode === 'vs-ai' && currentGame.turn === AI_PLAYER) return;
 
         const locked = currentGame.multiJump;
