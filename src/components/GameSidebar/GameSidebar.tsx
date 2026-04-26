@@ -71,12 +71,14 @@ function GameSidebar({
                     onClick={() => onSetGameMode('local')}
                     disabled={isAiThinking}
                     className={gameMode === 'local' ? 'btn mode-button mode-button--active' : 'btn mode-button'}
+                    ariaPressed={gameMode === 'local'}
                 />
                 <ActionButton
                     text="Vs AI"
                     onClick={() => onSetGameMode('vs-ai')}
                     disabled={isAiThinking}
                     className={gameMode === 'vs-ai' ? 'btn mode-button mode-button--active' : 'btn mode-button'}
+                    ariaPressed={gameMode === 'vs-ai'}
                 />
             </div>
             {isAiThinking ? <div className="game-ai-status">AI is thinking...</div> : null}

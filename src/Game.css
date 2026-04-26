@@ -73,11 +73,15 @@ body {
 
 .mode-button {
     margin-bottom: 0;
+    border-color: color-mix(in srgb, var(--color-accent) 75%, #ffffff 25%);
 }
 
-.mode-button--active {
+.game-mode-toggle .mode-button[aria-pressed="true"],
+.game-mode-toggle .mode-button.mode-button--active {
     background-color: var(--color-accent);
     color: var(--color-text-btn);
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.22), 0 10px 24px rgba(0, 0, 0, 0.28);
+    transform: translateY(-1px);
 }
 
 .game-ai-status {

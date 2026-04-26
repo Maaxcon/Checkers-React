@@ -7,6 +7,7 @@ type ActionButtonProps = {
     className?: string;
     disabled?: boolean;
     type?: 'button' | 'submit' | 'reset';
+    ariaPressed?: boolean;
 };
 
 function ActionButton({
@@ -14,10 +15,17 @@ function ActionButton({
     onClick,
     className = 'btn',
     disabled = false,
-    type = 'button'
+    type = 'button',
+    ariaPressed
 }: ActionButtonProps) {
     return (
-        <button className={className} onClick={onClick} disabled={disabled} type={type}>
+        <button
+            className={className}
+            onClick={onClick}
+            disabled={disabled}
+            type={type}
+            aria-pressed={ariaPressed}
+        >
             {text}
         </button>
     );
