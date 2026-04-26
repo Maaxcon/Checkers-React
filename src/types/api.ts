@@ -39,6 +39,21 @@ export type ApiAIMoveRequest = {
     difficulty?: 'easy' | 'medium' | 'hard';
 };
 
+export type ApiAIMoveEnqueueResponse = {
+    jobId: string;
+    status: string;
+    aiRequestId: string;
+};
+
+export type ApiAIMoveStatusResponse = {
+    jobId: string;
+    status: string;
+    isFinished: boolean;
+    isFailed: boolean;
+    result?: ApiGameMutationState;
+    error?: string;
+};
+
 export type ApiMoveLogEntry = {
     notation: string;
     from: ApiPosition;
