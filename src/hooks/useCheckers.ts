@@ -25,6 +25,7 @@ const msToSeconds = (value: number): number =>
 const SERVER_SYNC_INTERVAL_MS = 4000;
 const AI_POLL_INTERVAL_MS = 1200;
 const AI_POLL_TIMEOUT_MS = 30000;
+const AI_MOVE_SETTLE_DELAY_MS = GAME_SETTINGS.ANIMATION_DURATION_MS;
 const AI_PLAYER = PLAYERS.DARK;
 const DEFAULT_AI_DIFFICULTY = 'medium' as const;
 const DEFAULT_API_ERROR_MESSAGE = 'Server request failed';
@@ -70,6 +71,16 @@ const toMoveLogEntry = (entry: ApiMoveLogEntry) => ({
     from: { ...entry.from },
     to: { ...entry.to }
 });
+
+const toLastMove = (moveLog: ApiMoveLogEntry[]): LastMove | null => {
+    const latest = moveLog[moveLog.length - 1];
+    if (!latest) return null;
+
+    return {
+        from: { ...latest.from },
+        to: { ...latest.to }
+    };
+};
 
 type UseCheckersOptions = {
     saved: SavedData | null;
@@ -229,8 +240,12 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
             let keepGoing = true;
             while (keepGoing) {
                 const serverState = await requestAiMoveResult(currentGameId);
-                applyServerSnapshot(serverState, serverState.moveLog, { multiJump: null, lastMove: null });
+                const lastMove = toLastMove(serverState.moveLog);
+                applyServerSnapshot(serverState, serverState.moveLog, { multiJump: null, lastMove });
                 clearHighlights();
+                if (lastMove) {
+                    await waitFor(AI_MOVE_SETTLE_DELAY_MS);
+                }
                 keepGoing = shouldAiPlayTurn(serverState.turn, serverState.winner);
             }
             setApiError(null);
