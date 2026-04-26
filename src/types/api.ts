@@ -36,6 +36,7 @@ export type ApiMoveRequest = {
 };
 
 export type ApiAIMoveRequest = {
+    aiRequestId: string;
     difficulty?: 'easy' | 'medium' | 'hard';
 };
 

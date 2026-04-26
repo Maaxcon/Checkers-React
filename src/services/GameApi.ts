@@ -86,10 +86,10 @@ export const undo = (gameId: string) =>
 export const restart = (gameId: string) =>
     request<ApiGameMutationState>(`/games/${gameId}/restart/`, { method: 'POST' });
 
-export const aiMove = (gameId: string, body?: ApiAIMoveRequest) =>
+export const aiMove = (gameId: string, body: ApiAIMoveRequest) =>
     request<ApiAIMoveEnqueueResponse>(`/games/${gameId}/ai-move/`, {
         method: 'POST',
-        body: JSON.stringify(body ?? {})
+        body: JSON.stringify(body)
     });
 
 export const getAiMoveStatus = (gameId: string, jobId: string) =>
