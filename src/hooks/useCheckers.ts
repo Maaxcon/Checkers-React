@@ -25,6 +25,7 @@ const msToSeconds = (value: number): number =>
 const SERVER_SYNC_INTERVAL_MS = 4000;
 const AI_POLL_INTERVAL_MS = 1200;
 const AI_POLL_TIMEOUT_MS = 30000;
+const AI_MOVE_REVEAL_DELAY_MS = 450;
 const AI_MOVE_SETTLE_DELAY_MS = GAME_SETTINGS.ANIMATION_DURATION_MS;
 const AI_PLAYER = PLAYERS.DARK;
 const DEFAULT_AI_DIFFICULTY = 'medium' as const;
@@ -241,6 +242,9 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
             while (keepGoing) {
                 const serverState = await requestAiMoveResult(currentGameId);
                 const lastMove = toLastMove(serverState.moveLog);
+                if (lastMove) {
+                    await waitFor(AI_MOVE_REVEAL_DELAY_MS);
+                }
                 applyServerSnapshot(serverState, serverState.moveLog, { multiJump: null, lastMove });
                 clearHighlights();
                 if (lastMove) {
