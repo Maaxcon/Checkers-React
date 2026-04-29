@@ -1,0 +1,114 @@
+import type {
+    ApiAIMoveEnqueueResponse,
+    ApiAIMoveRequest,
+    ApiAIMoveStatusResponse,
+    ApiGameMutationState,
+    ApiGameStateWithId,
+    ApiMoveHistory,
+    ApiMoveRequest
+} from '../types/api.ts';
+
+const DEFAULT_API_BASE_URL = 'http://127.0.0.1:8000/api';
+const rawEnv = (import.meta as ImportMeta & { env?: Record<string, string | undefined> }).env;
+const API_BASE_URL = rawEnv?.VITE_API_BASE_URL ?? DEFAULT_API_BASE_URL;
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === 'object' && value !== null;
+
+const getCookie = (name: string): string | null => {
+    const cookieValue = document.cookie
+        .split(';')
+        .map((cookie) => cookie.trim())
+        .find((cookie) => cookie.startsWith(`${name}=`));
+    return cookieValue ? decodeURIComponent(cookieValue.split('=')[1]) : null;
+};
+
+const parsePayload = async (response: Response): Promise<unknown> => {
+    const text = await response.text();
+    if (!text) return null;
+
+    const contentType = response.headers.get('content-type') ?? '';
+    const looksLikeJson = contentType.includes('application/json');
+
+    if (looksLikeJson) {
+        try {
+            return JSON.parse(text);
+        } catch {
+            return text;
+        }
+    }
+
+    return text;
+};
+
+const request = async <T>(path: string, options?: RequestInit): Promise<T> => {
+    const method = options?.method?.toUpperCase() ?? 'GET';
+    const csrfToken = getCookie('csrftoken');
+    const headers = new Headers(options?.headers as HeadersInit);
+
+    headers.set('Content-Type', 'application/json');
+    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes(method) && csrfToken) {
+        headers.set('X-CSRFToken', csrfToken);
+    }
+
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+        ...options,
+        headers,
+        credentials: 'include',
+    });
+
+    const payload = await parsePayload(response);
+    if (!response.ok) {
+        const message = isRecord(payload) && typeof payload.error === 'string'
+            ? payload.error
+            : typeof payload === 'string' && payload.trim().length > 0
+                ? payload
+                : response.statusText
+                    ? `${response.status} ${response.statusText}`
+            : `Request failed (${response.status})`;
+        throw new Error(message);
+    }
+
+    if (isRecord(payload)) {
+        return payload as T;
+    }
+
+    throw new Error('Unexpected response format from server');
+};
+
+export const createGame = () =>
+    request<ApiGameStateWithId>('/games/', { method: 'POST' });
+
+export const getGame = (gameId: string) =>
+    request<ApiGameStateWithId>(`/games/${gameId}/`);
+
+export const move = (gameId: string, body: ApiMoveRequest) => {
+    const { fromRow, fromCol, toRow, toCol } = body;
+    return request<ApiGameMutationState>(`/games/${gameId}/move/`, {
+        method: 'POST',
+        body: JSON.stringify({ 
+            from_row: fromRow, 
+            from_col: fromCol, 
+            to_row: toRow, 
+            to_col: toCol 
+        })
+    });
+};
+
+export const undo = (gameId: string) =>
+    request<ApiGameMutationState>(`/games/${gameId}/undo/`, { method: 'POST' });
+
+export const restart = (gameId: string) =>
+    request<ApiGameMutationState>(`/games/${gameId}/restart/`, { method: 'POST' });
+
+export const aiMove = (gameId: string, body: ApiAIMoveRequest) =>
+    request<ApiAIMoveEnqueueResponse>(`/games/${gameId}/ai-move/`, {
+        method: 'POST',
+        body: JSON.stringify(body)
+    });
+
+export const getAiMoveStatus = (gameId: string, jobId: string) =>
+    request<ApiAIMoveStatusResponse>(`/games/${gameId}/ai-move/status/${jobId}/`);
+
+export const getHistory = (gameId: string) =>
+    request<ApiMoveHistory>(`/games/${gameId}/moves/`);

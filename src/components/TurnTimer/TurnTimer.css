@@ -1,0 +1,70 @@
+.timer-container {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    max-width: calc(var(--square-size) * 8 + var(--board-border-size) * 2);
+    margin-bottom: 20px;
+    gap: 15px;
+}
+
+.timer-box {
+    flex: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    border-radius: var(--radius-btn);
+    background-color: var(--color-panel-bg);
+    backdrop-filter: blur(5px);
+    border: 2px solid transparent;
+    transition: all var(--transition-fast);
+    box-shadow: var(--shadow-panel);
+}
+
+.timer-box--light {
+    color: var(--color-checker-light);
+}
+
+.timer-box--dark {
+    color: var(--color-text-timer-dark);
+}
+
+.timer-label {
+    font-size: clamp(0.9rem, 2vw, 1.1rem);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.timer-time {
+    font-family: monospace;
+    font-size: clamp(1.2rem, 3vw, 1.5rem);
+    font-weight: bold;
+}
+
+.timer-box.is-active {
+    border-color: var(--color-accent);
+    box-shadow: 0 0 15px var(--color-keyboard), inset 0 0 10px var(--color-keyboard);
+    transform: scale(1.02);
+}
+
+.timer-box--light.is-active .timer-time {
+    color: var(--color-text-main);
+}
+
+.timer-box--dark.is-active .timer-time {
+    color: var(--color-accent);
+}
+
+@media (max-width: 700px) {
+    .timer-container {
+        flex-direction: column;
+        gap: 10px;
+        margin-bottom: 14px;
+    }
+
+    .timer-box {
+        width: 100%;
+        padding: 10px 16px;
+    }
+}

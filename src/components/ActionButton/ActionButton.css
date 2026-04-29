@@ -1,0 +1,20 @@
+.btn,
+.btn-undo {
+    padding: 10px 20px;
+    font-size: var(--fs-btn);
+    font-weight: bold;
+    font-family: var(--font-main);
+    background-color: transparent;
+    color: var(--color-text-main);
+    border: 2px solid var(--color-accent);
+    border-radius: var(--radius-btn);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    margin-bottom: 20px;
+}
+
+.btn:hover,
+.btn-undo:hover {
+    background-color: var(--color-accent);
+    color: var(--color-text-btn);
+}
