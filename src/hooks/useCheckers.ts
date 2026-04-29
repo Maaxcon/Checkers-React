@@ -139,6 +139,7 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
     const moveInFlightRef = useRef(false);
     const aiInFlightRef = useRef(false);
     const syncInFlightRef = useRef(false);
+    const pendingAiRequestIdRef = useRef<string | null>(null);
 
     const interactionStateRef = useRef({
         winner,
@@ -206,8 +207,10 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
     }, [gameMode]);
 
     const requestAiMoveResult = useCallback(async (currentGameId: string): Promise<ApiGameMutationState> => {
+        const aiRequestId = pendingAiRequestIdRef.current ?? createAiRequestId();
+        pendingAiRequestIdRef.current = aiRequestId;
         const enqueuePayload = await requestAiMove(currentGameId, {
-            aiRequestId: createAiRequestId(),
+            aiRequestId,
             difficulty: DEFAULT_AI_DIFFICULTY
         });
 
@@ -261,6 +264,8 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
                     await waitFor(AI_MOVE_REVEAL_DELAY_MS);
                 }
                 applyServerSnapshot(serverState, serverState.moveLog, { multiJump: null, lastMove });
+                // Successful task completion means next AI step (if any) should use a new idempotency key.
+                pendingAiRequestIdRef.current = null;
                 clearHighlights();
                 if (lastMove) {
                     await waitFor(AI_MOVE_SETTLE_DELAY_MS);
@@ -451,6 +456,12 @@ export const useCheckers = ({ saved, gameId, syncTimerFromServer }: UseCheckersO
     const handleTimeout = useCallback(() => {
         void syncFromServerNow(true);
     }, [syncFromServerNow]);
+
+    useEffect(() => {
+        if (!shouldAiPlayTurn(game.turn, game.serverWinner)) {
+            pendingAiRequestIdRef.current = null;
+        }
+    }, [game.serverWinner, game.turn, shouldAiPlayTurn]);
 
     useEffect(() => {
         if (!shouldAiPlayTurn(game.turn, game.serverWinner)) return;
